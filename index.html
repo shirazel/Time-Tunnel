@@ -287,14 +287,8 @@ function buildGallery(){
   wall.rotation.x = Math.PI/2; wall.position.set(0, 1.6, BACK - LEN/2); S.add(wall);
   var floor = new THREE.Mesh(new THREE.PlaneGeometry(6.2, LEN), floorMat());
   floor.rotation.x = -Math.PI/2; floor.position.set(0, 0, BACK - LEN/2); S.add(floor);
-  var pc = canvas(64, 4), px = pc.getContext('2d'), pg = px.createLinearGradient(0,0,64,0);
-  pg.addColorStop(0,'rgba(255,200,100,0)'); pg.addColorStop(.5,'rgba(255,214,130,.9)'); pg.addColorStop(1,'rgba(255,200,100,0)'); px.fillStyle = pg; px.fillRect(0,0,64,4);
-  var path = new THREE.Mesh(new THREE.PlaneGeometry(.7, LEN), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(pc), transparent: true, opacity: .22, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
-  path.rotation.x = -Math.PI/2; path.position.set(0, .012, BACK - LEN/2); S.add(path);
-  for (var z = BACK - 1; z > BACK - LEN; z -= 2.6){
-    var ring = new THREE.Mesh(new THREE.TorusGeometry(3.3, .025, 8, 120), new THREE.MeshBasicMaterial({ color: '#ffcf6e', transparent: true, opacity: .2, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
-    ring.position.set(0, 1.6, z); ring.userData.ring = true; S.add(ring);
-  }
+  var lineMat = new THREE.MeshStandardMaterial({ color: '#e0b04a', metalness: 1, roughness: .25, emissive: '#5a3a08', emissiveIntensity: .6 });
+  [-.85, .85].forEach(function(x){ var ln = new THREE.Mesh(new THREE.PlaneGeometry(.045, LEN), lineMat); ln.rotation.x = -Math.PI/2; ln.position.set(x, .006, BACK - LEN/2); S.add(ln); });
   // the door you came through, closed behind you
   exitDoor = new THREE.Group(); exitDoor.position.set(0, 0, BACK - .05); exitDoor.rotation.y = Math.PI; S.add(exitDoor);
   var gateTex = new THREE.Texture(IMG.gate); gateTex.needsUpdate = true; gateTex.encoding = THREE.sRGBEncoding;
@@ -391,7 +385,7 @@ function enterTunnel(){
   anim = { t: 0, dur: reduce ? .01 : 2.4, yaw0: wrapAngle(yaw), pitch0: pitch, fov0: fov };
 }
 function arriveGallery(){
-  state = 'gallery'; camZ = tCamZ = 1.2; yaw = tYaw = 0; pitch = tPitch = 0; setFov(72);
+  state = 'gallery'; camZ = 3.0; tCamZ = .4; yaw = tYaw = 0; pitch = tPitch = 0; setFov(72);
   $('top').style.opacity = 0; showOnly('galleryBar'); flashTo(0, 1000);
   tip('לחצו על ידית של אריח כדי להיכנס למרחב. גלגלת העכבר מתקדמת במנהרה.', 7000);
 }
@@ -613,7 +607,6 @@ function animateGallery(dt, t){
   var arr = sparks.geometry.attributes.position.array;
   for (var k = 2; k < arr.length; k += 3){ arr[k] -= dt*.5*m; if (arr[k] < -42) arr[k] += 45; }
   sparks.geometry.attributes.position.needsUpdate = true;
-  galleryScene.children.forEach(function(o){ if (o.userData.ring) o.material.opacity = .08 + .45*Math.pow(Math.max(0, Math.sin(o.position.z*.4 + t*2*m)), 8); });
   tiles.forEach(function(tl){ var u = tl.userData, target = tl === hoverTile && state === 'gallery' ? 1 : 0;
     u.hover += (target - u.hover)*Math.min(1, dt*8);
     u.face.emissiveIntensity = .3 + .6*u.hover; tl.scale.setScalar(1 + .04*u.hover);
@@ -627,7 +620,7 @@ function tick(){
   if (anim) runAnim(dt);
   if (autoSpin && !drag && state === 'space') tYaw += dt*.035;
   if (!anim){ var k = Math.min(1, dt*9); yaw += (tYaw - yaw)*k; pitch += (tPitch - pitch)*k; }
-  if (state === 'gallery'){ camZ += (tCamZ - camZ)*Math.min(1, dt*4); camera.position.set(0, 1.6, camZ); }
+  if (state === 'gallery'){ camZ += (tCamZ - camZ)*Math.min(1, dt*1.8); camera.position.set(0, 1.6, camZ); }
   camera.rotation.set(pitch, yaw, 0);
   if (state === 'entry' || state === 'toGallery'){ camera.position.set(0, 1.6, 0); renderer.render(entryScene, camera); }
   else if (state === 'gallery' || state === 'toSpace'){ animateGallery(dt, t); renderer.render(galleryScene, camera); }
