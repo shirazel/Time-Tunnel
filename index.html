@@ -593,8 +593,9 @@ function bindUI(){
   full.addEventListener('click', function(){ try { if (document.fullscreenElement) document.exitFullscreen(); else { var p = document.documentElement.requestFullscreen(); if (p && p.catch) p.catch(function(){}); } } catch(e){} });
   document.addEventListener('fullscreenchange', function(){ full.textContent = document.fullscreenElement ? 'יציאה ממסך מלא' : 'מסך מלא'; });
   var drop = $('drop'), file = $('file');
-  drop.addEventListener('click', function(){ file.click(); });
-  drop.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); file.click(); } });
+  var pickFile = function(){ if (!$('spaceTitle').value.trim()){ showError('קודם כתבו שם למרחב.'); try { $('spaceTitle').focus(); } catch(e){} return; } $('err').hidden = true; file.click(); };
+  drop.addEventListener('click', pickFile);
+  drop.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); pickFile(); } });
   file.addEventListener('change', function(){ takeFile(file.files[0]); file.value = ''; });
   ['dragenter','dragover'].forEach(function(n){ drop.addEventListener(n, function(e){ e.preventDefault(); drop.classList.add('over'); }); });
   ['dragleave','drop'].forEach(function(n){ drop.addEventListener(n, function(e){ e.preventDefault(); drop.classList.remove('over'); }); });
