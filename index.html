@@ -20,6 +20,7 @@
 html,body{height:100%;margin:0;background:var(--night);color:var(--ink);font-family:var(--body);overflow:hidden}
 body{direction:rtl}
 [hidden]{display:none!important}
+.spaceBy{margin:8px 0 0;font-family:var(--display);font-weight:700;font-size:clamp(15px,1.8vw,19px);color:var(--ink);text-shadow:0 1px 4px #000,0 0 10px rgba(0,0,0,.8)}
 .arrival{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;pointer-events:none;z-index:7;text-align:center;
   padding:0 max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px));color:#5a3606;font-family:var(--display);animation:panelIn .6s ease both}
 .arrival span{font-size:clamp(16px,2vw,22px);font-weight:500}
@@ -116,7 +117,7 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
   <h1>מנהרת הזמן</h1>
   <p class="sub" id="topSub">גררו כדי להסתכל סביב. בקצה ההיכל מחכה לכם דלת הזהב.</p>
 </div>
-<div class="top" id="spaceTop" hidden><p class="spaceTitle" id="spaceName"></p></div>
+<div class="top" id="spaceTop" hidden><p class="spaceTitle" id="spaceName"></p><p class="spaceBy" id="spaceBy" hidden></p></div>
 
 <div class="bottom" id="entryBar">
   <button class="gold pulse" id="enterDoor" type="button">להיכנס בדלת הזהב</button>
@@ -145,6 +146,9 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
     <p>העלו תמונת 360, והיא תהפוך לאריח זהב על קיר המנהרה.</p>
     <label for="spaceTitle">שם המרחב
       <input type="text" id="spaceTitle" maxlength="40" required aria-required="true" placeholder="למשל: בית המקדש, חנוכת המזבח">
+    </label>
+    <label for="creatorName">השם שלכם
+      <input type="text" id="creatorName" maxlength="30" required aria-required="true" autocomplete="name" placeholder="למשל: שירה">
     </label>
     <div class="drop" id="drop" tabindex="0" role="button" aria-label="בחירת תמונה להעלאה">
       <button class="gold" id="pick" type="button" tabindex="-1">בחירת תמונה</button>
@@ -571,6 +575,7 @@ function openSpace(item, isShared){
   $('altarBtn').hidden = true; $('toFrame').hidden = true;
   current = { item: item, shared: isShared };
   $('spaceName').textContent = item.title || '';
+  $('spaceBy').textContent = item.creator ? 'נוצר על ידי ' + item.creator : ''; $('spaceBy').hidden = !item.creator;
   $('spaceTop').hidden = !item.title; $('busy').hidden = true;
   removeArmed = false; var rm = $('removeSpace'); rm.classList.remove('armed'); rm.textContent = 'הסרת המרחב';
   rm.hidden = isShared;
@@ -613,7 +618,7 @@ function takeFile(f){
   $('pick').textContent = 'החלפת תמונה';
   updateSaveButton();
 }
-function updateSaveButton(){ $('saveSpace').disabled = saving || !pendingFile || !$('spaceTitle').value.trim(); }
+function updateSaveButton(){ $('saveSpace').disabled = saving || !pendingFile || !$('spaceTitle').value.trim() || !$('creatorName').value.trim(); }
 function resetNote(){
   pendingFile = null; saving = false; var pv = $('preview'); if (pv.src) URL.revokeObjectURL(pv.src); pv.removeAttribute('src'); pv.hidden = true;
   $('pick').textContent = 'בחירת תמונה'; $('busy').hidden = true; updateSaveButton();
@@ -621,6 +626,8 @@ function resetNote(){
 function saveSpace(){
   var title = $('spaceTitle').value.trim().slice(0, 40);
   if (!title){ showError('כתבו שם למרחב. השם יופיע על האריח ובתוך המרחב.'); try { $('spaceTitle').focus(); } catch(e){} return; }
+  var creator = $('creatorName').value.trim().slice(0, 30);
+  if (!creator){ showError('כתבו את השם שלכם. הוא יופיע בתוך המרחב.'); try { $('creatorName').focus(); } catch(e){} return; }
   if (!pendingFile){ showError('בחרו תמונה למרחב.'); return; }
   saving = true; updateSaveButton(); $('err').hidden = true;
   var busy = $('busy'); busy.textContent = 'שומרים את המרחב...'; busy.hidden = false;
@@ -632,17 +639,17 @@ function saveSpace(){
   loadImage(url).then(function(im){
     URL.revokeObjectURL(url);
     var c = toPanoCanvas(im, true);
-    if (!canShare){ var it = { title: title, canvas: c, id: 'l' + Date.now() }; local.push(it); rebuildTiles(); done(it, false); return; }
+    if (!canShare){ var it = { title: title, creator: creator, canvas: c, id: 'l' + Date.now() }; local.push(it); rebuildTiles(); done(it, false); return; }
     busy.textContent = 'שומרים את המרחב במנהרה... זה לוקח כמה שניות';
     var send = c.width > 4096 ? shrink(c, 4096) : c, data = send.toDataURL('image/jpeg', .85).split(',')[1];
-    fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ title: title, data: data }) })
+    fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ title: title, creator: creator, data: data }) })
       .then(function(r){ return r.json(); })
       .then(function(r){
         if (!r || !r.ok) throw r;
-        var it = { id: String(r.id), title: title, canvas: c }; canvasCache[it.id] = c;
+        var it = { id: String(r.id), title: title, creator: creator, canvas: c }; canvasCache[it.id] = c;
         shared.unshift(it); listSig = ''; rebuildTiles(); done(it, true);
       }).catch(function(){
-        var it = { title: title, canvas: c, id: 'l' + Date.now() }; local.push(it); rebuildTiles();
+        var it = { title: title, creator: creator, canvas: c, id: 'l' + Date.now() }; local.push(it); rebuildTiles();
         done(it, false, 'השמירה במנהרה המשותפת נכשלה. המרחב נשמר רק אצלכם.');
       });
   }).catch(function(){ URL.revokeObjectURL(url); saving = false; updateSaveButton(); busy.hidden = true; showError('לא הצלחנו לפתוח את התמונה. שמרו אותה מחדש כ-JPG או PNG ונסו שוב.'); });
@@ -667,9 +674,9 @@ function refreshShared(){
     if (!r || !r.ok || !Array.isArray(r.spaces)) return;
     sharedLoaded = true;
     var old = {}; shared.forEach(function(s){ old[s.id] = s; });
-    var next = r.spaces.map(function(s){ var it = { id: String(s.id), title: String(s.title || '').slice(0, 40) };
+    var next = r.spaces.map(function(s){ var it = { id: String(s.id), title: String(s.title || '').slice(0, 40), creator: String(s.creator || '').slice(0, 30) };
       if (old[it.id] && old[it.id].canvas) it.canvas = old[it.id].canvas; return it; });
-    var sig = next.map(function(s){ return s.id + ':' + s.title; }).join('|');
+    var sig = next.map(function(s){ return s.id + ':' + s.title + ':' + s.creator; }).join('|');
     if (sig === listSig) return; listSig = sig; shared = next;
     if (galleryScene && state !== 'toSpace') rebuildTiles();
     prefetchRooms();
@@ -717,7 +724,7 @@ function bindControls(){
     else if (state === 'gallery'){ var h = hitGallery(e); hoverTile = h && h !== 'exit' ? h : null; cv.classList.toggle('hover', !!h);
       if (hoverTile && hoverTile.userData.kind === 'shared') ensureCanvas(hoverTile.userData.item).catch(function(){});
       var lab = $('tileLabel'); lab.hidden = !hoverTile;
-      if (hoverTile){ lab.textContent = hoverTile.userData.kind === 'plus' ? 'הוספת מרחב' : (hoverTile.userData.item.title || 'מרחב זמן'); lab.style.left = e.clientX + 'px'; lab.style.top = e.clientY + 'px'; } }
+      if (hoverTile){ lab.textContent = hoverTile.userData.kind === 'plus' ? 'הוספת מרחב' : ((hoverTile.userData.item.title || 'מרחב זמן') + (hoverTile.userData.item.creator ? ', מאת ' + hoverTile.userData.item.creator : '')); lab.style.left = e.clientX + 'px'; lab.style.top = e.clientY + 'px'; } }
   });
   var up = function(e){
     delete pts[e.pointerId]; if (pinch){ if (Object.keys(pts).length < 2) pinch = null; return; }
@@ -756,6 +763,7 @@ function bindUI(){
   var pickFile = function(){ if (saving) return; $('err').hidden = true; file.click(); };
   $('saveSpace').addEventListener('click', saveSpace);
   $('spaceTitle').addEventListener('input', updateSaveButton);
+  $('creatorName').addEventListener('input', updateSaveButton);
   drop.addEventListener('click', pickFile);
   drop.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); pickFile(); } });
   file.addEventListener('change', function(){ takeFile(file.files[0]); file.value = ''; });
