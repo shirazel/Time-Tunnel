@@ -158,7 +158,7 @@ var shared = [], local = [], current = null;
 var canShare = !!SCRIPT_URL, sharedLoaded = false, listSig = '';
 var tipTimer = null;
 var PANO_ROT = -Math.PI/2;          // puts the middle of a 2:1 image straight ahead
-var R = 3.25, TILE = .95, ROW_A = .186, SLOT = 1.75, FIRST_Z = -3.4;
+var R = 3.25, TILE = 1.2, ROW_A = .217, SLOT = 2.0, FIRST_Z = -3.4;
 
 /* ================= canvas helpers ================= */
 function canvas(w, h){ var c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
@@ -211,26 +211,26 @@ function engraveText(x, text, cx, cy, size, maxW){
     x.fillStyle = 'rgba(255,244,214,.55)'; x.fillText(l, cx + 1.5, y + 2);
     x.fillStyle = 'rgba(70,38,4,.92)'; x.fillText(l, cx, y); });
 }
+var IMG = {};   // tile, tileAdd, wall: Shira's artwork
 function tileTexture(kind, title){
-  var c = canvas(512,512), x = c.getContext('2d'); x.drawImage(goldBase, 0, 0);
-  if (kind === 'plus'){
-    // an engraved oil jar (pach shemen) with a small flame, instead of any plus sign
-    x.save(); x.translate(256, 236); x.lineJoin = 'round';
-    function jar(){ x.beginPath(); x.moveTo(-28,-118); x.lineTo(28,-118); x.lineTo(22,-92); x.bezierCurveTo(60,-80,96,-40,96,20);
-      x.bezierCurveTo(96,86,56,118,0,118); x.bezierCurveTo(-56,118,-96,86,-96,20); x.bezierCurveTo(-96,-40,-60,-80,-22,-92); x.closePath(); }
-    x.translate(6, 8); jar(); x.fillStyle = 'rgba(60,34,4,.55)'; x.fill(); x.translate(-6, -8);
-    var g = x.createLinearGradient(-96,-118,96,118); g.addColorStop(0,'#fff3c4'); g.addColorStop(.5,'#e7b54b'); g.addColorStop(1,'#a8721f');
-    jar(); x.fillStyle = g; x.fill(); x.strokeStyle = 'rgba(90,52,8,.8)'; x.lineWidth = 4; x.stroke();
-    x.strokeStyle = 'rgba(90,52,8,.6)'; x.lineWidth = 3; x.beginPath(); x.moveTo(-80,10); x.quadraticCurveTo(0,30,80,10); x.stroke();
-    x.beginPath(); x.moveTo(0,-128); x.bezierCurveTo(16,-150,10,-170,0,-190); x.bezierCurveTo(-10,-170,-16,-150,0,-128); x.fillStyle = 'rgba(255,248,225,.95)'; x.fill();
-    x.restore();
-    engraveText(x, 'הוספת מרחב', 256, 420, 46, 360);
-  } else {
-    // keyhole plate behind the ring handle
-    x.fillStyle = 'rgba(70,40,5,.35)'; x.beginPath(); x.arc(256, 178, 40, 0, 7); x.fill();
-    engraveText(x, title, 256, 408, 40, 370);
+  var S = 1024, c = canvas(S,S), x = c.getContext('2d');
+  x.drawImage(kind === 'plus' ? IMG.tileAdd : IMG.tile, 0, 0, S, S);
+  var label = kind === 'plus' ? 'הוספת מרחב' : title;
+  if (label){
+    var w = 640, h = 104, px = (S - w)/2, py = S - 150;
+    x.save(); x.shadowColor = 'rgba(0,0,0,.55)'; x.shadowBlur = 18; x.shadowOffsetY = 6;
+    var g = x.createLinearGradient(0, py, 0, py + h); g.addColorStop(0,'#3a2610'); g.addColorStop(1,'#1d1206');
+    x.fillStyle = g; x.beginPath(); x.moveTo(px + 20, py); x.lineTo(px + w - 20, py); x.quadraticCurveTo(px + w, py, px + w, py + 20);
+    x.lineTo(px + w, py + h - 20); x.quadraticCurveTo(px + w, py + h, px + w - 20, py + h); x.lineTo(px + 20, py + h);
+    x.quadraticCurveTo(px, py + h, px, py + h - 20); x.lineTo(px, py + 20); x.quadraticCurveTo(px, py, px + 20, py); x.fill(); x.restore();
+    x.strokeStyle = 'rgba(240,200,110,.85)'; x.lineWidth = 4; x.strokeRect(px + 10, py + 10, w - 20, h - 20);
+    x.font = '900 52px "Frank Ruhl Libre", David, serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.direction = 'rtl';
+    var t = label; while (x.measureText(t).width > w - 60 && t.length > 4) t = t.slice(0, -2);
+    if (t !== label) t = t.replace(/\s+$/, '') + '...';
+    var tg = x.createLinearGradient(0, py + 20, 0, py + h - 20); tg.addColorStop(0,'#fff0c2'); tg.addColorStop(1,'#d9a640');
+    x.fillStyle = tg; x.fillText(t, S/2, py + h/2 + 3);
   }
-  var t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); return t;
+  var tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding; tex.anisotropy = renderer.capabilities.getMaxAnisotropy(); return tex;
 }
 
 /* ================= panoramas ================= */
@@ -262,6 +262,10 @@ function disposeMesh(m){ if (!m) return; m.geometry.dispose(); if (m.material.ma
 function loadImage(src){ return new Promise(function(ok, bad){ var im = new Image(); im.onload = function(){ ok(im); }; im.onerror = bad; im.src = src; }); }
 
 /* ================= the tunnel of tiles ================= */
+function floorMat(){
+  var t = new THREE.Texture(IMG.wall); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(3, 34); t.encoding = THREE.sRGBEncoding;
+  return new THREE.MeshStandardMaterial({ map: t, color: '#6b6258', roughness: .4, metalness: .35, envMapIntensity: .25 });
+}
 function buildGallery(){
   var S = galleryScene = new THREE.Scene(); S.background = new THREE.Color('#060817'); S.fog = new THREE.FogExp2('#060817', .045);
   // a warm studio for the gold to reflect
@@ -277,17 +281,18 @@ function buildGallery(){
   var follow = new THREE.PointLight('#ffd9a0', 1.1, 7, 1.5); follow.name = 'follow'; S.add(follow);
 
   var BACK = 3.2, LEN = 70;
-  wallTex = wallTexture();
-  var wall = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.4, LEN, 64, 1, true), new THREE.MeshBasicMaterial({ map: wallTex, side: THREE.BackSide, toneMapped: false }));
+  wallTex = new THREE.Texture(IMG.wall); wallTex.needsUpdate = true; wallTex.wrapS = wallTex.wrapT = THREE.RepeatWrapping;
+  wallTex.repeat.set(10, 34); wallTex.encoding = THREE.sRGBEncoding; wallTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  var wall = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.4, LEN, 64, 1, true), new THREE.MeshBasicMaterial({ map: wallTex, side: THREE.BackSide, toneMapped: false, color: '#c9c2b4' }));
   wall.rotation.x = Math.PI/2; wall.position.set(0, 1.6, BACK - LEN/2); S.add(wall);
-  var floor = new THREE.Mesh(new THREE.PlaneGeometry(6.2, LEN), new THREE.MeshStandardMaterial({ color: '#0b0c22', roughness: .55, metalness: .3, envMapIntensity: .15 }));
+  var floor = new THREE.Mesh(new THREE.PlaneGeometry(6.2, LEN), floorMat());
   floor.rotation.x = -Math.PI/2; floor.position.set(0, 0, BACK - LEN/2); S.add(floor);
   var pc = canvas(64, 4), px = pc.getContext('2d'), pg = px.createLinearGradient(0,0,64,0);
   pg.addColorStop(0,'rgba(255,200,100,0)'); pg.addColorStop(.5,'rgba(255,214,130,.9)'); pg.addColorStop(1,'rgba(255,200,100,0)'); px.fillStyle = pg; px.fillRect(0,0,64,4);
   var path = new THREE.Mesh(new THREE.PlaneGeometry(.7, LEN), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(pc), transparent: true, opacity: .22, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
   path.rotation.x = -Math.PI/2; path.position.set(0, .012, BACK - LEN/2); S.add(path);
   for (var z = BACK - 1; z > BACK - LEN; z -= 2.6){
-    var ring = new THREE.Mesh(new THREE.TorusGeometry(3.3, .025, 8, 120), new THREE.MeshBasicMaterial({ color: '#ffcf6e', transparent: true, opacity: .35, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+    var ring = new THREE.Mesh(new THREE.TorusGeometry(3.3, .025, 8, 120), new THREE.MeshBasicMaterial({ color: '#ffcf6e', transparent: true, opacity: .2, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
     ring.position.set(0, 1.6, z); ring.userData.ring = true; S.add(ring);
   }
   // the door you came through, closed behind you
@@ -323,10 +328,10 @@ function makeTile(kind, item){
   var recess = new THREE.Mesh(new THREE.BoxGeometry(TILE + .1, TILE + .1, .04), tileBack); recess.position.z = -.06; g.add(recess);
   var glowPlane = new THREE.Mesh(new THREE.PlaneGeometry(TILE*.96, TILE*.96), tileLight); glowPlane.position.z = -.035; glowPlane.visible = false; g.add(glowPlane);
   var pivot = new THREE.Group(); pivot.position.x = -TILE/2; g.add(pivot);
-  var face = new THREE.MeshStandardMaterial({ map: tileTexture(kind, item ? item.title : ''), metalness: .85, roughness: .34, emissive: '#3b2606', emissiveIntensity: .25 });
+  var face = new THREE.MeshStandardMaterial({ map: tileTexture(kind, item ? item.title : ''), metalness: .45, roughness: .45, emissive: '#6a460e', emissiveIntensity: .3 });
   var panel = new THREE.Mesh(tileGeo, [tileGold, tileGold, tileGold, tileGold, face, tileGold]); panel.position.x = TILE/2; pivot.add(panel);
   var hinge = null;
-  if (kind !== 'plus'){
+  if (false){
     var boss = new THREE.Mesh(bossGeo, tileGold); boss.position.set(TILE/2, TILE*.15, .05); pivot.add(boss);
     hinge = new THREE.Group(); hinge.position.set(TILE/2, TILE*.15, .05); pivot.add(hinge);
     var ring = new THREE.Mesh(ringGeo, tileGold); ring.position.y = -.12; hinge.add(ring);
@@ -390,7 +395,7 @@ function arriveGallery(){
   tip('לחצו על ידית של אריח כדי להיכנס למרחב. גלגלת העכבר מתקדמת במנהרה.', 7000);
 }
 function exitToEntry(){
-  state = 'entry'; yaw = tYaw = 0; pitch = tPitch = .05; setFov(72); flashTo(0, 700);
+  state = 'entry'; yaw = tYaw = 0; pitch = tPitch = .05; setFov(80); flashTo(0, 700);
   $('top').style.opacity = 1; $('topSub').textContent = 'גררו כדי להסתכל סביב. דלת הזהב מחכה לכם.'; showOnly('entryBar'); $('spaceTop').hidden = true;
 }
 function openTileAnim(t){
@@ -603,15 +608,14 @@ function bindUI(){
 function resize(){ var w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w/h; camera.updateProjectionMatrix(); }
 function animateGallery(dt, t){
   var m = reduce ? 0 : 1;
-  wallTex.offset.x += dt*.003*m; wallTex.offset.y += dt*.01*m;
   sparks.rotation.z += dt*.05*m;
   var arr = sparks.geometry.attributes.position.array;
   for (var k = 2; k < arr.length; k += 3){ arr[k] -= dt*.5*m; if (arr[k] < -42) arr[k] += 45; }
   sparks.geometry.attributes.position.needsUpdate = true;
-  galleryScene.children.forEach(function(o){ if (o.userData.ring) o.material.opacity = .18 + .6*Math.pow(Math.max(0, Math.sin(o.position.z*.4 + t*2*m)), 8); });
+  galleryScene.children.forEach(function(o){ if (o.userData.ring) o.material.opacity = .08 + .45*Math.pow(Math.max(0, Math.sin(o.position.z*.4 + t*2*m)), 8); });
   tiles.forEach(function(tl){ var u = tl.userData, target = tl === hoverTile && state === 'gallery' ? 1 : 0;
     u.hover += (target - u.hover)*Math.min(1, dt*8);
-    u.face.emissiveIntensity = .25 + .55*u.hover;
+    u.face.emissiveIntensity = .3 + .6*u.hover; tl.scale.setScalar(1 + .04*u.hover);
     if (u.hinge && state === 'gallery') u.hinge.rotation.x = -.5*u.hover + (m ? .04*Math.sin(t*1.3 + tl.position.z) : 0);
   });
   var f = galleryScene.getObjectByName('follow'); f.position.set(0, 2.3, camera.position.z - 1.2);
@@ -641,9 +645,10 @@ function start(){
   resize(); window.addEventListener('resize', resize);
   bindControls(); bindUI(); connectShared();
   var fontsReady = (document.fonts && document.fonts.load) ? Promise.all([document.fonts.load('900 40px "Frank Ruhl Libre"'), document.fonts.ready]).catch(function(){}) : Promise.resolve();
-  Promise.all([loadImage('entrance.jpg'), fontsReady]).then(function(r){
-    buildEntry(r[0]); makeGoldBase(); buildGallery(); rebuildTiles();
-    pitch = tPitch = .05; requestAnimationFrame(tick);
+  Promise.all([loadImage('entrance.jpg'), loadImage('tile.jpg'), loadImage('tile-add.jpg'), loadImage('wall.jpg'), fontsReady]).then(function(r){
+    IMG.tile = r[1]; IMG.tileAdd = r[2]; IMG.wall = r[3];
+    buildEntry(r[0]); buildGallery(); rebuildTiles();
+    pitch = tPitch = .05; setFov(80); requestAnimationFrame(tick);
     var l = $('loader'); l.style.opacity = 0; setTimeout(function(){ l.hidden = true; }, 850);
   }).catch(function(){ $('loader').textContent = 'לא הצלחנו לטעון את שער הזמן. רעננו את הדף.'; });
 }
