@@ -113,8 +113,8 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
   <div class="card" role="dialog" aria-labelledby="pTitle">
     <h2 id="pTitle">מרחב זמן חדש</h2>
     <p>העלו תמונת 360, והיא תהפוך לאריח זהב על קיר המנהרה.</p>
-    <label for="spaceTitle">שם המרחב (לא חובה)
-      <input type="text" id="spaceTitle" maxlength="40" placeholder="למשל: בית המקדש, חנוכת המזבח">
+    <label for="spaceTitle">שם המרחב
+      <input type="text" id="spaceTitle" maxlength="40" required aria-required="true" placeholder="למשל: בית המקדש, חנוכת המזבח">
     </label>
     <div class="drop" id="drop" tabindex="0" role="button" aria-label="בחירת תמונה להעלאה">
       <button class="gold" id="pick" type="button" tabindex="-1">בחירת תמונה</button>
@@ -477,6 +477,7 @@ function showError(t){ $('busy').hidden = true; $('err').textContent = t; $('err
 function takeFile(f){
   if (!f || state !== 'gate') return;
   if (!/^image\//.test(f.type) && !/\.(jpe?g|png|webp|gif|avif|bmp)$/i.test(f.name || '')){ showError('הקובץ הזה אינו תמונה. בחרו קובץ JPG, PNG או WEBP.'); return; }
+  if (!$('spaceTitle').value.trim()){ showError('כתבו שם למרחב, ואז בחרו שוב את התמונה.'); try { $('spaceTitle').focus(); } catch(e){} return; }
   $('err').hidden = true; var busy = $('busy'); busy.textContent = 'פותחים את המרחב...'; busy.hidden = false;
   var url = URL.createObjectURL(f);
   loadImage(url).then(function(im){
