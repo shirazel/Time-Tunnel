@@ -54,6 +54,8 @@ button{font-family:var(--body);font-size:17px;cursor:pointer}
 .ghost[aria-pressed="true"]{filter:brightness(1.25) saturate(1.2)}
 .ghost.warn.armed{filter:sepia(1) hue-rotate(-35deg) saturate(3) brightness(.9);color:#fff}
 button:focus-visible,.drop:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--gold-hi);outline-offset:3px}
+/* the plaque buttons show keyboard focus as a gold glow around their own shape, not a box */
+.gold:focus-visible,.ghost:focus-visible{outline:none;filter:drop-shadow(0 0 6px #ffe3a1) drop-shadow(0 0 14px rgba(255,214,120,.7)) brightness(1.08)}
 .pulse{animation:pulse 2.4s ease-in-out infinite}
 @keyframes pulse{50%{filter:drop-shadow(0 0 14px rgba(255,214,120,.85)) brightness(1.08)}}
 .tip{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 92px);left:50%;transform:translateX(-50%);font-size:15px;color:var(--ink);
@@ -921,7 +923,6 @@ function start(){
     buildEntry(r[1]); buildGallery(); rebuildTiles();
     pitch = tPitch = .05; setFov(80); requestAnimationFrame(tick);
     $('loaderText').textContent = 'שער הזמן מוכן'; var go = $('loaderGo'); go.hidden = false;
-    try { go.focus({ preventScroll: true }); } catch(e){}
     go.addEventListener('click', function(){
       startTicking(); go.disabled = true;
       var l = $('loader'); l.style.opacity = 0; setTimeout(function(){ l.hidden = true; stopTicking(); }, 1600);
