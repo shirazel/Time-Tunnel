@@ -456,7 +456,7 @@ function openTileAnim(t){
   openTile = t; state = 'toSpace'; showOnly(null); $('gl').classList.remove('hover'); $('tip').hidden = true;
   var n = new THREE.Vector3(-p.x, 0, 0).normalize();
   anim = { t: 0, dur: reduce ? .01 : 1.9, tile: t, yaw0: yaw, pitch0: pitch, yaw1: targetYaw, pitch1: targetPitch,
-    from: new THREE.Vector3(0, 1.6, 0), to: new THREE.Vector3(0, 1.6, 0).lerp(p, .55) };
+    from: new THREE.Vector3(0, 1.6, 0), to: new THREE.Vector3(0, 1.6, 0).lerp(p, .18) };
 }
 function runAnim(dt){
   var a = anim; a.t += dt; var k = a.t / a.dur;
@@ -475,7 +475,7 @@ function runAnim(dt){
     if (u.halo) u.halo.material.opacity = .85*u.open;
     if (u.glow.material.uniforms) u.glow.material.uniforms.glow.value = .25*(1 - u.open) + .08;
     yaw = tYaw = a.yaw0 + (a.yaw1 - a.yaw0)*ease(k*1.6); pitch = tPitch = a.pitch0 + (a.pitch1 - a.pitch0)*ease(k*1.6);
-    var m = ease((k - .35)/.65); camera.position.lerpVectors(a.from, a.to, m); camZ = camera.position.z;
+    var m = ease((k - .35)/.65); camera.position.lerpVectors(a.from, a.to, m); camZ = 0; setFov(72 - 8*m);
     if (k >= 1){ anim = null;
       if (u.kind !== 'plus') openSpace(u.item, u.kind === 'shared');
       else if (reduce) showGate();
