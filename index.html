@@ -163,7 +163,7 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
     <details>
       <summary>עוד אין לכם תמונה? הפרומפט ליצירה</summary>
       <p class="howto">העתיקו את הפרומפט ל-ChatGPT או ל-Gemini, והחליפו את מה שבסוגריים המרובעים במקום ובזמן שלכם (אפשר בעברית). אם יש אפשרות לבחור יחס תמונה, בחרו את הרחב ביותר. שמרו את התמונה שנוצרה והעלו אותה לכאן.</p>
-      <pre class="prompt" id="promptText">An equirectangular 360-degree panorama, 2:1 aspect ratio, with seamless left and right edges. I have just stepped through a glowing golden time-travel door, and now I am standing in: [לאן ולאיזו תקופה, למשל: בית המקדש בירושלים ביום חנוכת המזבח]. All around me: [מה רואים מסביב: אנשים, חפצים, בניינים]. Time of day and atmosphere: [למשל: שקיעה, ערב חורף, אור של מנורות שמן]. Behind me, the golden door I came through is still glowing. Viewpoint at human eye level, the surroundings visible in every direction, sky above and ground below. Shot like a film still: real textures, natural practical light, subtle film grain. No text, no frame, no borders.</pre>
+      <pre class="prompt" id="promptText">A 360-degree equirectangular panorama photo sphere, exactly 2:1 aspect ratio, like a VR or Google Street View photosphere. The scene wraps completely around the viewer: what is behind me continues seamlessly from the right edge to the left edge. The horizon is a straight line exactly at the vertical middle of the image; the ground curves and stretches across the bottom and the sky stretches across the top, as in a spherical projection. I have just stepped through a glowing golden time-travel door, and now I am standing in: [לאן ולאיזו תקופה, למשל: מחנה המכבים בהרי יהודה, ערב הקרב ביוונים]. All around me, in every direction: [מה רואים מסביב: אנשים, חפצים, בניינים, נוף]. Time of day and atmosphere: [למשל: שקיעה, ערב חורף, אור של מנורות שמן]. Behind me, the golden door I came through is still glowing. Viewpoint at human eye level in the middle of a wide open space. Shot like a film still: real textures, natural practical light, subtle film grain. No text, no frame, no borders, not a flat photo.</pre>
       <div class="row"><button class="ghost" id="copy" type="button">העתקת הפרומפט</button></div>
     </details>
   </div>
@@ -295,13 +295,25 @@ function toPanoCanvas(im, soften){
   var w = im.naturalWidth || im.width, h = im.naturalHeight || im.height, r = w / h;
   var H = Math.min(h, 2048); if (H < 512) H = 512; var W = H*2;
   var c = canvas(W, H), x = c.getContext('2d');
-  if (r >= 1.5) x.drawImage(im, 0, 0, W, H);
-  else { var n = Math.max(2, 2*Math.round(1/r)), sw = W/n;
-    for (var k = 0; k < n; k++){ x.save();
-      if (k % 2){ x.translate((k + 1)*sw, 0); x.scale(-1, 1); x.drawImage(im, 0, 0, sw, H); } else x.drawImage(im, k*sw, 0, sw, H);
-      x.restore(); } }
+  if (r >= 1.9) x.drawImage(im, 0, 0, W, H);
+  else domeInto(x, im, r, W, H);
   if (soften) softenPoles(x, W, H);
   return c;
+}
+function domeInto(x, im, r, W, H){
+  // the surroundings: the picture itself, stretched round and blurred, a little darker
+  x.save(); x.filter = 'blur(' + Math.round(H*.045) + 'px) brightness(.62) saturate(1.15)';
+  x.drawImage(im, -W*.04, -H*.06, W*1.08, H*1.12); x.restore();
+  // the picture: as wide as up to 240 degrees around you, centred on the horizon, with feathered edges
+  var span = Math.min(240, Math.max(150, r*120)), iw = W*span/360, ih = Math.min(H*.84, iw/r); iw = ih*r;
+  var o = canvas(Math.round(iw), Math.round(ih)), ox = o.getContext('2d'); ox.drawImage(im, 0, 0, o.width, o.height);
+  ox.globalCompositeOperation = 'destination-out';
+  var fx = Math.round(o.width*.1), fy = Math.round(o.height*.12), g;
+  g = ox.createLinearGradient(0, 0, fx, 0); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ox.fillStyle = g; ox.fillRect(0, 0, fx, o.height);
+  g = ox.createLinearGradient(o.width, 0, o.width - fx, 0); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ox.fillStyle = g; ox.fillRect(o.width - fx, 0, fx, o.height);
+  g = ox.createLinearGradient(0, 0, 0, fy); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ox.fillStyle = g; ox.fillRect(0, 0, o.width, fy);
+  g = ox.createLinearGradient(0, o.height, 0, o.height - fy); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ox.fillStyle = g; ox.fillRect(0, o.height - fy, o.width, fy);
+  x.drawImage(o, (W - o.width)/2, (H - o.height)/2);
 }
 function softenPoles(x, W, H){
   function avg(y){ var d = x.getImageData(0, y, W, 3).data, R2 = 0, G = 0, B = 0, n = d.length/4;
