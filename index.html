@@ -715,7 +715,8 @@ function refreshShared(){
 var prefetching = false;
 function prefetchRooms(){
   if (prefetching || !SCRIPT_URL) return;
-  var next = shared.filter(function(s){ return !s.canvas && !canvasCache[s.id]; })[0];
+  var per = SPACE_NICHES.length, onPage = shared.concat(local).slice(page*per, page*per + per);
+  var next = onPage.filter(function(s){ return s.id && s.id.charAt(0) !== 'l' && !s.canvas && !canvasCache[s.id]; })[0];
   if (!next) return;
   prefetching = true;
   ensureCanvas(next).catch(function(){}).then(function(){ prefetching = false; setTimeout(prefetchRooms, 300); });
@@ -777,7 +778,7 @@ function bindControls(){
 function bindUI(){
   $('enterDoor').addEventListener('click', enterTunnel);
   $('exitTunnel').addEventListener('click', exitToEntry);
-  $('morePage').addEventListener('click', function(){ if (state !== 'gallery') return; page++; rebuildTiles(); });
+  $('morePage').addEventListener('click', function(){ if (state !== 'gallery') return; page++; rebuildTiles(); prefetchRooms(); });
   $('addSpace').addEventListener('click', function(){ if (state === 'gallery' && plusTile) openTileAnim(plusTile); });
   $('backTunnel').addEventListener('click', backToGallery);
   $('panelBack').addEventListener('click', backToGallery);
