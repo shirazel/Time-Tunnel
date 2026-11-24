@@ -51,19 +51,22 @@ button:focus-visible,.drop:focus-visible,summary:focus-visible,input:focus-visib
 .tip{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 92px);left:50%;transform:translateX(-50%);font-size:15px;color:var(--ink);
   background:rgba(8,10,30,.66);border:1px solid rgba(185,178,214,.25);border-radius:999px;padding:7px 16px;max-width:calc(100% - 32px);box-sizing:border-box;text-align:center;transition:opacity 1s;pointer-events:none;z-index:5}
 .flash{position:fixed;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 50%,#fffaf0 0,#ffe3a1 35%,#e8b94a 70%,#7a4f10 100%)}
-.panel{position:fixed;inset:0;overflow:auto;display:grid;place-items:center;
-  padding:calc(env(safe-area-inset-top,0px) + 24px) max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 24px) max(16px,env(safe-area-inset-left,0px));
-  background:radial-gradient(ellipse at 50% 50%,rgba(6,8,23,0) 35%,rgba(6,8,23,.6) 95%);animation:panelIn .7s ease both}
+.panel{position:fixed;inset:0;pointer-events:none;animation:panelIn .9s ease .15s both}
+.panel .card{pointer-events:auto}
 @keyframes panelIn{from{opacity:0}to{opacity:1}}
-.card{width:min(580px,100%);box-sizing:border-box;border:2px solid #b8862f;border-radius:26px;padding:30px 28px;display:grid;gap:16px;
-  background:linear-gradient(180deg,rgba(16,11,4,.8),rgba(8,6,3,.88)),url(wall.jpg) center/520px;
-  box-shadow:inset 0 0 0 5px rgba(0,0,0,.35),inset 0 0 0 6px rgba(240,200,110,.5),inset 0 0 50px rgba(0,0,0,.6),0 30px 90px rgba(0,0,0,.7)}
-.card h2{font-family:var(--display);font-weight:400;font-size:clamp(26px,4vw,36px);line-height:1.1;margin:0;color:var(--gold-hi);text-wrap:balance;text-shadow:0 0 18px rgba(232,185,74,.45),0 2px 0 var(--gold-lo)}
-.card p{margin:0;font-size:17px;line-height:1.55}
+/* the note: no border of its own, the painted gold frame is its border */
+.card{position:absolute;box-sizing:border-box;overflow:auto;display:flex;flex-direction:column;justify-content:center;gap:clamp(8px,1.4vh,14px);
+  padding:clamp(12px,2.2vh,22px) clamp(14px,2vw,24px);border-radius:6px;
+  background:radial-gradient(ellipse at 50% 40%,rgba(40,26,8,.72),rgba(10,7,3,.86) 80%);
+  box-shadow:inset 0 0 30px rgba(0,0,0,.75),inset 0 0 0 1px rgba(255,214,130,.18);scrollbar-width:thin;scrollbar-color:#8a6420 transparent}
+.card.free{left:50%!important;top:50%!important;transform:translate(-50%,-50%);width:min(92vw,400px)!important;height:auto!important;max-height:calc(100% - 140px);border:2px solid #b8862f;border-radius:18px}
+@media (prefers-reduced-motion:reduce){ .panel{animation:none} }
+.card h2{font-family:var(--display);font-weight:400;font-size:clamp(20px,2.6vw,30px);text-align:center;line-height:1.1;margin:0;color:var(--gold-hi);text-wrap:balance;text-shadow:0 0 18px rgba(232,185,74,.45),0 2px 0 var(--gold-lo)}
+.card p{margin:0;font-size:clamp(13px,1.4vw,16px);line-height:1.4;text-align:center}
 label{font-weight:700;font-size:16px;display:grid;gap:6px}
 input[type=text]{font-family:var(--body);font-size:17px;padding:11px 18px;border-radius:999px;border:1px solid rgba(232,185,74,.6);background:rgba(20,14,6,.75);color:var(--ink);box-shadow:inset 0 2px 6px rgba(0,0,0,.6)}
 input[type=text]::placeholder{color:var(--mute)}
-.drop{border:2px dashed rgba(232,185,74,.65);border-radius:16px;padding:22px 16px;text-align:center;display:grid;gap:12px;justify-items:center;cursor:pointer;transition:background .2s}
+.drop{border:1px dashed rgba(232,185,74,.6);border-radius:14px;padding:clamp(8px,1.6vh,16px) 12px;text-align:center;display:grid;gap:12px;justify-items:center;cursor:pointer;transition:background .2s}
 .drop.over{background:rgba(232,185,74,.14);border-color:var(--gold-hi)}
 .small{font-size:14px;color:var(--mute);line-height:1.5}
 .saveNote{font-size:14px;line-height:1.5;color:var(--gold-hi);margin:0}
@@ -131,8 +134,10 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
       <pre class="prompt" id="promptText">An equirectangular 360-degree panorama, 2:1 aspect ratio, with seamless left and right edges. I have just stepped through a glowing golden time-travel door, and now I am standing in: [לאן ולאיזו תקופה, למשל: בית המקדש בירושלים ביום חנוכת המזבח]. All around me: [מה רואים מסביב: אנשים, חפצים, בניינים]. Time of day and atmosphere: [למשל: שקיעה, ערב חורף, אור של מנורות שמן]. Behind me, the golden door I came through is still glowing. Viewpoint at human eye level, the surroundings visible in every direction, sky above and ground below. Shot like a film still: real textures, natural practical light, subtle film grain. No text, no frame, no borders.</pre>
       <div class="row"><button class="ghost" id="copy" type="button">העתקת הפרומפט</button></div>
     </details>
-    <div class="row"><button class="ghost" id="panelBack" type="button">חזרה למנהרה</button></div>
   </div>
+</div>
+<div class="bottom" id="gateBar" hidden>
+  <button class="ghost" id="panelBack" type="button">חזרה למנהרה</button>
 </div>
 
 <div class="loader" id="loader">פותחים את שער הזמן...</div>
@@ -378,7 +383,7 @@ function ease(v){ v = Math.max(0, Math.min(1, v)); return v < .5 ? 2*v*v : 1 - M
 function wrapAngle(a){ return a - Math.round(a/TAU)*TAU; }
 function setFov(v){ fov = Math.max(30, Math.min(90, v)); camera.fov = fov; camera.updateProjectionMatrix(); }
 function flashTo(v, ms){ var el = $('flash'); el.style.transition = 'opacity ' + (ms || 900) + 'ms'; el.style.opacity = v; }
-function showOnly(bar){ ['entryBar','galleryBar','spaceBar'].forEach(function(id){ $(id).hidden = id !== bar; }); }
+function showOnly(bar){ ['entryBar','galleryBar','spaceBar','gateBar'].forEach(function(id){ $(id).hidden = id !== bar; }); }
 function tip(text, ms){ var el = $('tip'); el.textContent = text; el.hidden = false; el.style.opacity = 1; clearTimeout(tipTimer);
   tipTimer = setTimeout(function(){ el.style.opacity = 0; }, ms || 5500); }
 
@@ -475,7 +480,7 @@ function setSpin(on){ autoSpin = on; $('spin').setAttribute('aria-pressed', on ?
 /* ================= adding a space ================= */
 function showGate(){
   var rm = roomMesh.material; rm.opacity = 1; rm.transparent = false;
-  state = 'gate'; $('panel').hidden = false; showOnly(null); $('err').hidden = true; $('busy').hidden = true; $('spaceTop').hidden = true;
+  state = 'gate'; $('panel').hidden = false; showOnly('gateBar'); placeNote(); $('err').hidden = true; $('busy').hidden = true; $('spaceTop').hidden = true;
   $('saveNote').textContent = canShare ? 'המרחב יישמר במנהרה לכל מי שנכנס לקישור.' : 'המרחב יישמר רק במחשב שלכם, עד שתסגרו את הדף.';
   flashTo(0, 900); setTimeout(function(){ try { $('spaceTitle').focus({ preventScroll: true }); } catch(e){} }, 60);
 }
@@ -620,7 +625,7 @@ function bindUI(){
 }
 
 /* ================= loop ================= */
-function resize(){ var w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w/h; camera.updateProjectionMatrix(); }
+function resize(){ var w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w/h; camera.updateProjectionMatrix(); if (state === 'gate') placeNote(); }
 function animateGallery(dt, t){
   var m = reduce ? 0 : 1;
   sparks.rotation.z += dt*.05*m;
@@ -634,10 +639,31 @@ function animateGallery(dt, t){
   });
   var f = galleryScene.getObjectByName('follow'); f.position.set(0, 2.3, camera.position.z - 1.2);
 }
-function roomYaw(t){ return reduce ? 0 : .07*Math.sin(t*.12); }
+var ROOM_FOV = 92;   // wide, so the whole observatory moves around the framed note
+function roomYaw(t){ return reduce ? 0 : .13*Math.sin(t*.11); }
 function renderRoom(t){
-  gcam.aspect = camera.aspect; gcam.fov = 72; gcam.updateProjectionMatrix(); gcam.position.set(0, 1.6, 0); gcam.rotation.set(-.02, roomYaw(t), 0);
+  gcam.aspect = camera.aspect; gcam.fov = ROOM_FOV; gcam.updateProjectionMatrix(); gcam.position.set(0, 1.6, 0); gcam.rotation.set(-.02, roomYaw(t), 0);
   renderer.render(roomScene, gcam);
+  if (state === 'gate') placeNote();
+}
+/* inner opening of the painted frame in room.jpg, as fractions of the image */
+var FRAME = { u0: 772/1774, u1: 1003/1774, v0: 300/887, v1: 540/887 };
+var noteV = new THREE.Vector3();
+function frameScreen(u, v){
+  var a = (u - .5)*TAU, lat = (.5 - v)*Math.PI;
+  noteV.set(Math.sin(a)*Math.cos(lat)*30, 1.6 + Math.sin(lat)*30, -Math.cos(a)*Math.cos(lat)*30);
+  gcam.updateMatrixWorld(); noteV.project(gcam);
+  return { x: (noteV.x + 1)/2*innerWidth, y: (1 - noteV.y)/2*innerHeight };
+}
+function placeNote(){
+  var card = document.querySelector('.panel .card'); if (!card || !gcam) return;
+  var p = [frameScreen(FRAME.u0, FRAME.v0), frameScreen(FRAME.u1, FRAME.v0), frameScreen(FRAME.u0, FRAME.v1), frameScreen(FRAME.u1, FRAME.v1)];
+  var x0 = Math.min(p[0].x, p[2].x), x1 = Math.max(p[1].x, p[3].x), y0 = Math.min(p[0].y, p[1].y), y1 = Math.max(p[2].y, p[3].y);
+  if (x0 > x1){ var tmp = x0; x0 = Math.min(p[1].x, p[3].x); x1 = Math.max(p[0].x, p[2].x); }
+  var w = x1 - x0, h = y1 - y0;
+  if (w < 300 || h < 320){ card.classList.add('free'); return; }   // small screens: a framed note in the middle
+  card.classList.remove('free');
+  card.style.left = x0 + 'px'; card.style.top = y0 + 'px'; card.style.width = w + 'px'; card.style.height = h + 'px';
 }
 function tick(){
   requestAnimationFrame(tick);
@@ -665,8 +691,8 @@ function tick(){
     if (anim.base === 'room') renderRoom(t); else { animateGallery(dt, t); renderer.render(galleryScene, camera); }
     var om = anim.overMesh.material; om.transparent = true; om.opacity = anim.mix;
     var sb = anim.overScene.background; anim.overScene.background = null;
-    gcam.aspect = camera.aspect; gcam.fov = 72; gcam.updateProjectionMatrix(); gcam.position.set(0, 1.6, 0);
-    gcam.rotation.set(0, anim.overScene === roomScene ? roomYaw(t) : 0, 0);
+    gcam.aspect = camera.aspect; gcam.fov = anim.overScene === roomScene ? ROOM_FOV : 72; gcam.updateProjectionMatrix(); gcam.position.set(0, 1.6, 0);
+    gcam.rotation.set(anim.overScene === roomScene ? -.02 : 0, anim.overScene === roomScene ? roomYaw(t) : 0, 0);
     renderer.autoClear = false; renderer.clearDepth(); renderer.render(anim.overScene, gcam); renderer.autoClear = true;
     anim.overScene.background = sb;
   }
