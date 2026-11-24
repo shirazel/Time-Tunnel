@@ -85,7 +85,7 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
 
 <div class="top" id="top">
   <h1>מנהרת הזמן</h1>
-  <p class="sub" id="topSub">גררו כדי להסתכל סביב. דלת הזהב מחכה לכם.</p>
+  <p class="sub" id="topSub">גררו כדי להסתכל סביב. בקצה ההיכל מחכה לכם דלת הזהב.</p>
 </div>
 <div class="top" id="spaceTop" hidden><p class="spaceTitle" id="spaceName"></p></div>
 
@@ -374,7 +374,7 @@ function lookDir(e){
   raycaster.setFromCamera(pointer, camera); var d = raycaster.ray.direction;
   return { yaw: Math.atan2(-d.x, -d.z), pitch: Math.asin(d.y) };
 }
-function onEntryDoor(e){ var d = lookDir(e); return Math.abs(d.yaw) < .4 && d.pitch > -.35 && d.pitch < .85; }
+function onEntryDoor(e){ var d = lookDir(e); return Math.abs(d.yaw) < .26 && d.pitch > -.3 && d.pitch < .26; }
 
 /* ================= transitions ================= */
 function ease(v){ v = Math.max(0, Math.min(1, v)); return v < .5 ? 2*v*v : 1 - Math.pow(-2*v + 2, 2)/2; }
@@ -388,7 +388,7 @@ function tip(text, ms){ var el = $('tip'); el.textContent = text; el.hidden = fa
 function enterTunnel(){
   if (state !== 'entry') return;
   state = 'toGallery'; showOnly(null); $('top').style.opacity = 0; $('gl').classList.remove('hover');
-  anim = { t: 0, dur: reduce ? .01 : 1.7, yaw0: wrapAngle(yaw), pitch0: pitch, fov0: fov };
+  anim = { t: 0, dur: reduce ? .01 : 2.4, yaw0: wrapAngle(yaw), pitch0: pitch, fov0: fov };
 }
 function arriveGallery(){
   state = 'gallery'; camZ = tCamZ = 1.2; yaw = tYaw = 0; pitch = tPitch = 0; setFov(72);
@@ -397,7 +397,7 @@ function arriveGallery(){
 }
 function exitToEntry(){
   state = 'entry'; yaw = tYaw = 0; pitch = tPitch = .05; setFov(80); flashTo(0, 700);
-  $('top').style.opacity = 1; $('topSub').textContent = 'גררו כדי להסתכל סביב. דלת הזהב מחכה לכם.'; showOnly('entryBar'); $('spaceTop').hidden = true;
+  $('top').style.opacity = 1; $('topSub').textContent = 'גררו כדי להסתכל סביב. בקצה ההיכל מחכה לכם דלת הזהב.'; showOnly('entryBar'); $('spaceTop').hidden = true;
 }
 function openTileAnim(t){
   if (state !== 'gallery') return;
@@ -413,9 +413,9 @@ function openTileAnim(t){
 function runAnim(dt){
   var a = anim; a.t += dt; var k = a.t / a.dur;
   if (state === 'toGallery'){
-    yaw = tYaw = a.yaw0*(1 - ease(k*1.4)); pitch = tPitch = a.pitch0 + (.12 - a.pitch0)*ease(k*1.4);
-    setFov(a.fov0 + (16 - a.fov0)*ease(k));
-    flashTo(Math.max(0, (k - .55)/.45), 1);
+    yaw = tYaw = a.yaw0*(1 - ease(k*1.4)); pitch = tPitch = a.pitch0 + (-.01 - a.pitch0)*ease(k*1.4);
+    setFov(a.fov0 + (9 - a.fov0)*ease(k));
+    flashTo(Math.max(0, (k - .6)/.4), 1);
     if (k >= 1){ anim = null; arriveGallery(); }
   } else if (state === 'toSpace'){
     var t = a.tile, u = t.userData;
