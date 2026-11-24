@@ -415,15 +415,34 @@ function exitToEntry(){
 /* what you see inside an opening tile: a glimpse of the place it leads to, or the stone wall */
 function setTileWindow(t){
   var u = t.userData, src = u.kind === 'plus' ? IMG.room : (u.item && u.item.canvas) || null, c = canvas(512, 512), x = c.getContext('2d');
-  if (src){ var w = src.naturalWidth || src.width, h = src.naturalHeight || src.height; x.drawImage(src, w*.38, h*.22, w*.24, h*.48, 0, 0, 512, 512); }
+  if (src){ var w = src.naturalWidth || src.width, h = src.naturalHeight || src.height; x.drawImage(src, w*.4, h*.25, w*.2, h*.5, 0, 0, 512, 512); }
   else x.drawImage(IMG.wall, 0, 0, 512, 512);
   var g = x.createRadialGradient(256,256,180,256,256,380); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,.55)'); x.fillStyle = g; x.fillRect(0,0,512,512);
   var tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding;
   if (u.glow.material !== tileLight){ u.glow.material.map.dispose(); u.glow.material.dispose(); }
   u.glow.material = new THREE.MeshBasicMaterial({ map: tex, toneMapped: false });
 }
+var loadingTile = null;
+function ensureCanvas(item){
+  if (item.canvas) return Promise.resolve(item.canvas);
+  if (!item.loading){
+    item.loading = getJSON(SCRIPT_URL + '?action=image&id=' + encodeURIComponent(item.id))
+      .then(function(r){ if (!r || !r.ok || !r.data) throw 0; return loadImage('data:image/jpeg;base64,' + r.data); })
+      .then(function(im){ item.canvas = toPanoCanvas(im, false); return item.canvas; });
+    item.loading.catch(function(){ item.loading = null; });
+  }
+  return item.loading;
+}
 function openTileAnim(t){
   if (state !== 'gallery') return;
+  // a door opens onto its room: fetch the room first, so the opening shows it
+  var tu = t.userData;
+  if (tu.kind === 'shared' && !tu.item.canvas){
+    if (loadingTile) return; loadingTile = t; tip('פותחים את הדלת...', 20000);
+    ensureCanvas(tu.item).then(function(){ loadingTile = null; $('tip').hidden = true; openTileAnim(t); })
+      .catch(function(){ loadingTile = null; tip('לא הצלחנו לטעון את המרחב הזה. נסו שוב בעוד רגע.'); });
+    return;
+  }
   var p = t.position, dx = p.x, dy = p.y - 1.6, dz = p.z - camZ;
   galleryPose = { z: camZ, yaw: yaw, pitch: pitch };
   var targetYaw = Math.atan2(-dx, -dz), targetPitch = Math.atan2(dy, Math.hypot(dx, dz));
@@ -491,9 +510,7 @@ function openSpace(item, isShared){
   };
   if (item.canvas){ show(item.canvas); return; }
   tip('פותחים את המרחב...', 15000);
-  getJSON(SCRIPT_URL + '?action=image&id=' + encodeURIComponent(item.id))
-    .then(function(r){ if (!r || !r.ok || !r.data) throw 0; return loadImage('data:image/jpeg;base64,' + r.data); })
-    .then(function(im){ item.canvas = toPanoCanvas(im, false); if (state === 'toSpace') show(item.canvas); })
+  ensureCanvas(item).then(function(c){ if (state === 'toSpace') show(c); })
     .catch(function(){ backToGallery(); tip('לא הצלחנו לטעון את המרחב הזה. נסו שוב בעוד רגע.'); });
 }
 function setSpin(on){ autoSpin = on; $('spin').setAttribute('aria-pressed', on ? 'true' : 'false'); }
@@ -590,7 +607,8 @@ function bindControls(){
     if (drag){ var dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.moved = Math.max(drag.moved, Math.abs(dx) + Math.abs(dy));
       tYaw = drag.yaw + dx*.005*(fov/72); tPitch = Math.max(-pitchMax(), Math.min(pitchMax(), drag.pitch + dy*.004)); return; }
     if (state === 'entry') cv.classList.toggle('hover', onEntryDoor(e));
-    else if (state === 'gallery'){ var h = hitGallery(e); hoverTile = h && h !== 'exit' ? h : null; cv.classList.toggle('hover', !!h); }
+    else if (state === 'gallery'){ var h = hitGallery(e); hoverTile = h && h !== 'exit' ? h : null; cv.classList.toggle('hover', !!h);
+      if (hoverTile && hoverTile.userData.kind === 'shared') ensureCanvas(hoverTile.userData.item).catch(function(){}); }
   });
   var up = function(e){
     delete pts[e.pointerId]; if (pinch){ if (Object.keys(pts).length < 2) pinch = null; return; }
@@ -746,7 +764,7 @@ function start(){
   bindControls(); bindUI(); connectShared();
   var fontsReady = (document.fonts && document.fonts.load) ? Promise.all([document.fonts.load('40px "Suez One"'), document.fonts.ready]).catch(function(){}) : Promise.resolve();
   Promise.all([loadImage('entrance.jpg'), loadImage('tile.jpg'), loadImage('tile-add.jpg'), loadImage('wall.jpg'), loadImage('gate-back.png'), loadImage('room.jpg'), fontsReady]).then(function(r){
-    IMG.tile = r[1]; IMG.tileAdd = r[2]; IMG.wall = r[3]; IMG.gate = r[4];
+    IMG.tile = r[1]; IMG.tileAdd = r[2]; IMG.wall = r[3]; IMG.gate = r[4]; IMG.room = r[5];
     roomScene = new THREE.Scene(); roomScene.background = new THREE.Color('#060817'); roomMesh = panoMesh(toPanoCanvas(r[5], false)); roomScene.add(roomMesh);
     buildEntry(r[0]); buildGallery(); rebuildTiles();
     pitch = tPitch = .05; setFov(80); requestAnimationFrame(tick);
