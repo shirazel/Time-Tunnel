@@ -35,19 +35,18 @@ h1{font-family:var(--display);font-weight:900;font-size:clamp(34px,6vw,64px);lin
   pointer-events:none}
 .bottom > *{pointer-events:auto}
 button{font-family:var(--body);font-size:17px;cursor:pointer}
-.gold{border:0;border-radius:999px;padding:13px 26px;font-weight:700;color:#2b1a00;
-  background:linear-gradient(180deg,var(--gold-hi),var(--gold) 55%,#b9821f);
-  box-shadow:0 0 0 1px rgba(255,227,161,.6) inset,0 6px 28px rgba(232,185,74,.45)}
-.gold:hover{filter:brightness(1.08)}
-.gold:disabled{filter:grayscale(.6) brightness(.8);cursor:default}
-.ghost{border:1px solid var(--line);border-radius:999px;padding:11px 20px;font-weight:600;color:var(--ink);background:rgba(8,10,30,.68);backdrop-filter:blur(6px)}
-.ghost:hover{border-color:var(--gold-hi);color:var(--gold-hi)}
-.ghost[aria-pressed="true"]{border-color:var(--gold);color:var(--gold-hi)}
-.ghost.warn{border-color:rgba(255,160,130,.6)}
-.ghost.warn.armed{background:rgba(120,30,20,.8);color:#fff}
+.gold,.ghost{appearance:none;background:none;border-style:solid;border-color:transparent;border-width:0 32px;border-radius:0;
+  min-height:56px;box-sizing:border-box;padding:10px 8px 12px;font-family:var(--display);font-weight:900;font-size:18px;line-height:1.2;
+  transition:filter .2s, transform .2s}
+.gold{border-image:url(btn-gold.png) 0 150 fill / 0 32px / 0 stretch;color:#3a2200;text-shadow:0 1px 0 rgba(255,244,214,.7)}
+.ghost{border-image:url(btn-bronze.png) 0 150 fill / 0 32px / 0 stretch;color:var(--gold-hi);text-shadow:0 1px 3px rgba(0,0,0,.9)}
+.gold:hover,.ghost:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.gold:disabled,.ghost:disabled{filter:grayscale(.6) brightness(.75);cursor:default;transform:none}
+.ghost[aria-pressed="true"]{filter:brightness(1.25) saturate(1.2)}
+.ghost.warn.armed{filter:sepia(1) hue-rotate(-35deg) saturate(3) brightness(.9);color:#fff}
 button:focus-visible,.drop:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--gold-hi);outline-offset:3px}
 .pulse{animation:pulse 2.4s ease-in-out infinite}
-@keyframes pulse{50%{box-shadow:0 0 0 1px rgba(255,227,161,.6) inset,0 6px 44px rgba(255,214,120,.85)}}
+@keyframes pulse{50%{filter:drop-shadow(0 0 14px rgba(255,214,120,.85)) brightness(1.08)}}
 .tip{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 92px);left:50%;transform:translateX(-50%);font-size:15px;color:var(--ink);
   background:rgba(8,10,30,.66);border:1px solid rgba(185,178,214,.25);border-radius:999px;padding:7px 16px;max-width:calc(100% - 32px);box-sizing:border-box;text-align:center;transition:opacity 1s;pointer-events:none;z-index:5}
 .flash{position:fixed;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 50%,#fffaf0 0,#ffe3a1 35%,#e8b94a 70%,#7a4f10 100%)}
@@ -75,7 +74,7 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
 .row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
 .msg{position:fixed;inset:0;display:grid;place-items:center;text-align:center;padding:24px;font-size:18px;line-height:1.6}
 .loader{position:fixed;inset:0;display:grid;place-items:center;font-family:var(--display);font-size:22px;color:var(--gold-hi);background:var(--night);transition:opacity .8s}
-@media (max-width:520px){ .card{padding:22px 18px} .gold{padding:12px 20px} .ghost{padding:10px 14px;font-size:15px} }
+@media (max-width:520px){ .card{padding:22px 18px} .gold,.ghost{min-height:48px;border-width:0 26px;border-image-width:0 26px;font-size:15px;padding:8px 4px 10px} }
 @media (prefers-reduced-motion:reduce){ .pulse{animation:none} }
 </style>
 </head>
@@ -382,14 +381,17 @@ function tip(text, ms){ var el = $('tip'); el.textContent = text; el.hidden = fa
 function enterTunnel(){
   if (state !== 'entry') return;
   state = 'toGallery'; showOnly(null); $('top').style.opacity = 0; $('gl').classList.remove('hover');
-  anim = { t: 0, dur: reduce ? .01 : 2.4, yaw0: wrapAngle(yaw), pitch0: pitch, fov0: fov };
+  anim = { t: 0, dur: reduce ? .01 : 3.2, mix: 0, yaw0: wrapAngle(yaw), pitch0: pitch, fov0: fov };
 }
+function resetEntryMesh(){ var em = entryMesh.material; em.opacity = 1; em.transparent = false; entryMesh.position.z = 0; }
 function arriveGallery(){
+  resetEntryMesh();
   state = 'gallery'; camZ = 3.0; tCamZ = .4; yaw = tYaw = 0; pitch = tPitch = 0; setFov(72);
   $('top').style.opacity = 0; showOnly('galleryBar'); flashTo(0, 1000);
   tip('לחצו על ידית של אריח כדי להיכנס למרחב. גלגלת העכבר מתקדמת במנהרה.', 7000);
 }
 function exitToEntry(){
+  resetEntryMesh();
   state = 'entry'; yaw = tYaw = 0; pitch = tPitch = .05; setFov(80); flashTo(0, 700);
   $('top').style.opacity = 1; $('topSub').textContent = 'גררו כדי להסתכל סביב. בקצה ההיכל מחכה לכם דלת הזהב.'; showOnly('entryBar'); $('spaceTop').hidden = true;
 }
@@ -408,8 +410,9 @@ function runAnim(dt){
   var a = anim; a.t += dt; var k = a.t / a.dur;
   if (state === 'toGallery'){
     yaw = tYaw = a.yaw0*(1 - ease(k*1.4)); pitch = tPitch = a.pitch0 + (-.01 - a.pitch0)*ease(k*1.4);
-    setFov(a.fov0 + (9 - a.fov0)*ease(k));
-    flashTo(Math.max(0, (k - .6)/.4), 1);
+    // zoom down the hall to the door, then dissolve straight into the tunnel behind it
+    if (k < .6){ a.mix = 0; setFov(a.fov0 + (22 - a.fov0)*ease(k/.6)); }
+    else { a.mix = ease((k - .6)/.4); setFov(22 + 50*a.mix); }
     if (k >= 1){ anim = null; arriveGallery(); }
   } else if (state === 'toSpace'){
     var t = a.tile, u = t.userData;
@@ -622,7 +625,14 @@ function tick(){
   if (!anim){ var k = Math.min(1, dt*9); yaw += (tYaw - yaw)*k; pitch += (tPitch - pitch)*k; }
   if (state === 'gallery'){ camZ += (tCamZ - camZ)*Math.min(1, dt*1.8); camera.position.set(0, 1.6, camZ); }
   camera.rotation.set(pitch, yaw, 0);
-  if (state === 'entry' || state === 'toGallery'){ camera.position.set(0, 1.6, 0); renderer.render(entryScene, camera); }
+  if (state === 'toGallery' && anim && anim.mix > 0){
+    camera.position.set(0, 1.6, 3.0); animateGallery(dt, t); renderer.render(galleryScene, camera);
+    var em = entryMesh.material; em.transparent = true; em.opacity = 1 - anim.mix; entryMesh.position.z = 3.0;
+    var bg = entryScene.background; entryScene.background = null;
+    renderer.autoClear = false; renderer.clearDepth(); renderer.render(entryScene, camera); renderer.autoClear = true;
+    entryScene.background = bg;
+  }
+  else if (state === 'entry' || state === 'toGallery'){ camera.position.set(0, 1.6, 0); renderer.render(entryScene, camera); }
   else if (state === 'gallery' || state === 'toSpace'){ animateGallery(dt, t); renderer.render(galleryScene, camera); }
   else renderer.render(spaceScene, camera);
 }
