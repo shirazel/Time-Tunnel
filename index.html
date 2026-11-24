@@ -502,7 +502,7 @@ function runAnim(dt){
     if (k >= 1){ anim = null;
       if (u.kind !== 'plus') openSpace(u.item, u.kind === 'shared');
       else if (reduce) showGate();
-      else { flashTo(0, 1300); state = 'reveal'; anim = { t: 0, dur: .3, mix: 0, base: 'gallery', overScene: roomScene, overMesh: roomMesh, done: showGate }; } }
+      else { flashTo(0, 900); showGate(); } }
   }
 }
 function closeOpenTile(){
@@ -529,8 +529,8 @@ function openSpace(item, isShared){
     if (spaceMesh){ spaceScene.remove(spaceMesh); disposeMesh(spaceMesh); }
     spaceMesh = panoMesh(c); spaceScene.add(spaceMesh);
     $('panel').hidden = true; $('tip').hidden = true;
-    flashTo(0, 1300);
-    if (!reduce && (state === 'toSpace' || state === 'gate')){ anim = { t: 0, dur: 1.1, mix: 0, base: state === 'gate' ? 'room' : 'gallery', overScene: spaceScene, overMesh: spaceMesh, done: finish }; state = 'reveal'; return; }
+    flashTo(0, 900);
+    if (!reduce && state === 'gate'){ anim = { t: 0, dur: 1.1, mix: 0, base: state === 'gate' ? 'room' : 'gallery', overScene: spaceScene, overMesh: spaceMesh, done: finish }; state = 'reveal'; return; }
     finish();
   };
   var finish = function(){
