@@ -52,13 +52,15 @@ button:focus-visible,.drop:focus-visible,summary:focus-visible,input:focus-visib
 .flash{position:fixed;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 50%,#fffaf0 0,#ffe3a1 35%,#e8b94a 70%,#7a4f10 100%)}
 .panel{position:fixed;inset:0;overflow:auto;display:grid;place-items:center;
   padding:calc(env(safe-area-inset-top,0px) + 24px) max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 24px) max(16px,env(safe-area-inset-left,0px));
-  background:radial-gradient(ellipse at 50% 40%,rgba(255,220,150,.3),rgba(6,8,23,.94) 68%)}
-.card{width:min(580px,100%);box-sizing:border-box;background:var(--glass);border:1px solid var(--line);border-radius:20px;padding:28px 26px;
-  backdrop-filter:blur(12px);display:grid;gap:16px;box-shadow:0 20px 80px rgba(0,0,0,.5)}
-.card h2{font-family:var(--display);font-weight:900;font-size:clamp(26px,4vw,36px);line-height:1.1;margin:0;color:var(--gold-hi);text-wrap:balance}
+  background:radial-gradient(ellipse at 50% 45%,rgba(6,8,23,.25),rgba(6,8,23,.78) 75%);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);animation:panelIn .7s ease both}
+@keyframes panelIn{from{opacity:0}to{opacity:1}}
+.card{width:min(580px,100%);box-sizing:border-box;border:2px solid #b8862f;border-radius:26px;padding:30px 28px;display:grid;gap:16px;
+  background:linear-gradient(180deg,rgba(16,11,4,.84),rgba(8,6,3,.92)),url(wall.jpg) center/520px;
+  box-shadow:inset 0 0 0 5px rgba(0,0,0,.35),inset 0 0 0 6px rgba(240,200,110,.5),inset 0 0 50px rgba(0,0,0,.6),0 30px 90px rgba(0,0,0,.7)}
+.card h2{font-family:var(--display);font-weight:900;font-size:clamp(26px,4vw,36px);line-height:1.1;margin:0;color:var(--gold-hi);text-wrap:balance;text-shadow:0 0 18px rgba(232,185,74,.45),0 2px 0 var(--gold-lo)}
 .card p{margin:0;font-size:17px;line-height:1.55}
 label{font-weight:700;font-size:16px;display:grid;gap:6px}
-input[type=text]{font-family:var(--body);font-size:17px;padding:11px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.35);color:var(--ink)}
+input[type=text]{font-family:var(--body);font-size:17px;padding:11px 18px;border-radius:999px;border:1px solid rgba(232,185,74,.6);background:rgba(20,14,6,.75);color:var(--ink);box-shadow:inset 0 2px 6px rgba(0,0,0,.6)}
 input[type=text]::placeholder{color:var(--mute)}
 .drop{border:2px dashed rgba(232,185,74,.65);border-radius:16px;padding:22px 16px;text-align:center;display:grid;gap:12px;justify-items:center;cursor:pointer;transition:background .2s}
 .drop.over{background:rgba(232,185,74,.14);border-color:var(--gold-hi)}
@@ -147,7 +149,7 @@ var TAU = Math.PI*2;
 
 /* state: entry | toGallery | gallery | toSpace | gate | space */
 var state = 'entry';
-var renderer, camera, clock, raycaster, pointer;
+var renderer, camera, gcam, clock, raycaster, pointer;
 var entryScene, galleryScene, spaceScene, entryMesh = null, spaceMesh = null;
 var yaw = 0, pitch = 0, tYaw = 0, tPitch = 0, fov = 72, autoSpin = false;
 var camZ = 1.2, tCamZ = 1.2, anim = null;
@@ -381,12 +383,12 @@ function tip(text, ms){ var el = $('tip'); el.textContent = text; el.hidden = fa
 function enterTunnel(){
   if (state !== 'entry') return;
   state = 'toGallery'; showOnly(null); $('top').style.opacity = 0; $('gl').classList.remove('hover');
-  anim = { t: 0, dur: reduce ? .01 : 3.2, mix: 0, yaw0: wrapAngle(yaw), pitch0: pitch, fov0: fov };
+  anim = { t: 0, dur: reduce ? .01 : 3.4, mix: 0, efov: fov, yaw0: wrapAngle(yaw), pitch0: pitch, fov0: fov };
 }
 function resetEntryMesh(){ var em = entryMesh.material; em.opacity = 1; em.transparent = false; entryMesh.position.z = 0; }
 function arriveGallery(){
   resetEntryMesh();
-  state = 'gallery'; camZ = 3.0; tCamZ = .4; yaw = tYaw = 0; pitch = tPitch = 0; setFov(72);
+  state = 'gallery'; camZ = 2.1; tCamZ = .4; yaw = tYaw = 0; pitch = tPitch = 0; setFov(72);
   $('top').style.opacity = 0; showOnly('galleryBar'); flashTo(0, 1000);
   tip('לחצו על ידית של אריח כדי להיכנס למרחב. גלגלת העכבר מתקדמת במנהרה.', 7000);
 }
@@ -409,18 +411,19 @@ function openTileAnim(t){
 function runAnim(dt){
   var a = anim; a.t += dt; var k = a.t / a.dur;
   if (state === 'toGallery'){
-    yaw = tYaw = a.yaw0*(1 - ease(k*1.4)); pitch = tPitch = a.pitch0 + (-.01 - a.pitch0)*ease(k*1.4);
-    // zoom down the hall to the door, then dissolve straight into the tunnel behind it
-    if (k < .6){ a.mix = 0; setFov(a.fov0 + (22 - a.fov0)*ease(k/.6)); }
-    else { a.mix = ease((k - .6)/.4); setFov(22 + 50*a.mix); }
+    yaw = tYaw = a.yaw0*(1 - ease(k/.55)); pitch = tPitch = a.pitch0 + (-.06 - a.pitch0)*ease(k/.55);
+    // the eye travels down the hall until the light in the doorway fills the screen; the tunnel appears out of that light
+    a.efov = a.fov0 + (20 - a.fov0)*ease(k/.9);
+    a.mix = k < .45 ? 0 : ease((k - .45)/.55);
     if (k >= 1){ anim = null; arriveGallery(); }
+  } else if (state === 'reveal'){
+    a.mix = ease(k); if (k >= 1){ anim = null; a.done(); }
   } else if (state === 'toSpace'){
     var t = a.tile, u = t.userData;
     if (u.hinge) u.hinge.rotation.x = -1.1*ease(k*3);
     u.open = ease((k - .25)/.45); u.pivot.rotation.y = -1.55*u.open; u.glow.visible = u.open > 0;
     yaw = tYaw = a.yaw0 + (a.yaw1 - a.yaw0)*ease(k*1.6); pitch = tPitch = a.pitch0 + (a.pitch1 - a.pitch0)*ease(k*1.6);
     var m = ease((k - .35)/.65); camera.position.lerpVectors(a.from, a.to, m); camZ = camera.position.z;
-    flashTo(Math.max(0, (k - .7)/.3), 1);
     if (k >= 1){ anim = null; if (u.kind === 'plus') showGate(); else openSpace(u.item, u.kind === 'shared'); }
   }
 }
@@ -445,6 +448,12 @@ function openSpace(item, isShared){
   var show = function(c){
     if (spaceMesh){ spaceScene.remove(spaceMesh); disposeMesh(spaceMesh); }
     spaceMesh = panoMesh(c); spaceScene.add(spaceMesh);
+    $('panel').hidden = true; $('tip').hidden = true;
+    if (!reduce && (state === 'toSpace' || state === 'gate')){ state = 'reveal'; anim = { t: 0, dur: 1.1, mix: 0, done: finish }; return; }
+    finish();
+  };
+  var finish = function(){
+    var sm = spaceMesh.material; sm.opacity = 1; sm.transparent = false;
     state = 'space'; camera.position.set(0, 1.6, 0); yaw = tYaw = 0; pitch = tPitch = 0; setFov(72);
     $('panel').hidden = true; showOnly('spaceBar'); flashTo(0, 1000); setSpin(!reduce);
     tip('גררו כדי להסתכל סביב. גלגלת העכבר מקרבת ומרחיקה.');
@@ -625,15 +634,29 @@ function tick(){
   if (!anim){ var k = Math.min(1, dt*9); yaw += (tYaw - yaw)*k; pitch += (tPitch - pitch)*k; }
   if (state === 'gallery'){ camZ += (tCamZ - camZ)*Math.min(1, dt*1.8); camera.position.set(0, 1.6, camZ); }
   camera.rotation.set(pitch, yaw, 0);
-  if (state === 'toGallery' && anim && anim.mix > 0){
-    camera.position.set(0, 1.6, 3.0); animateGallery(dt, t); renderer.render(galleryScene, camera);
-    var em = entryMesh.material; em.transparent = true; em.opacity = 1 - anim.mix; entryMesh.position.z = 3.0;
-    var bg = entryScene.background; entryScene.background = null;
-    renderer.autoClear = false; renderer.clearDepth(); renderer.render(entryScene, camera); renderer.autoClear = true;
-    entryScene.background = bg;
+  if (state === 'toGallery' && anim){
+    camera.fov = anim.efov; camera.updateProjectionMatrix(); camera.position.set(0, 1.6, 0);
+    if (anim.mix > 0){
+      gcam.aspect = camera.aspect; gcam.updateProjectionMatrix(); gcam.position.set(0, 1.6, 3.0 - .9*anim.mix);
+      animateGallery(dt, t); renderer.render(galleryScene, gcam);
+      var em = entryMesh.material; em.transparent = true; em.opacity = 1 - anim.mix;
+      var bg = entryScene.background; entryScene.background = null;
+      renderer.autoClear = false; renderer.clearDepth(); renderer.render(entryScene, camera); renderer.autoClear = true;
+      entryScene.background = bg;
+    } else renderer.render(entryScene, camera);
   }
   else if (state === 'entry' || state === 'toGallery'){ camera.position.set(0, 1.6, 0); renderer.render(entryScene, camera); }
   else if (state === 'gallery' || state === 'toSpace'){ animateGallery(dt, t); renderer.render(galleryScene, camera); }
+  else if (state === 'reveal' && anim){
+    // the time space dissolves in over the open tile
+    animateGallery(dt, t); renderer.render(galleryScene, camera);
+    var sm = spaceMesh.material; sm.transparent = true; sm.opacity = anim.mix;
+    var sb = spaceScene.background; spaceScene.background = null;
+    gcam.aspect = camera.aspect; gcam.fov = 72; gcam.updateProjectionMatrix(); gcam.position.set(0, 1.6, 0); gcam.rotation.set(0, 0, 0);
+    renderer.autoClear = false; renderer.clearDepth(); renderer.render(spaceScene, gcam); renderer.autoClear = true;
+    spaceScene.background = sb;
+  }
+  else if (state === 'gate'){ animateGallery(dt, t); renderer.render(galleryScene, camera); }
   else renderer.render(spaceScene, camera);
 }
 
@@ -644,6 +667,7 @@ function start(){
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
   camera = new THREE.PerspectiveCamera(fov, 1, .05, 120); camera.rotation.order = 'YXZ'; camera.position.set(0, 1.6, 0);
+  gcam = new THREE.PerspectiveCamera(72, 1, .05, 120);
   clock = new THREE.Clock(); raycaster = new THREE.Raycaster(); pointer = new THREE.Vector2();
   spaceScene = new THREE.Scene(); spaceScene.background = new THREE.Color('#060817');
   resize(); window.addEventListener('resize', resize);
