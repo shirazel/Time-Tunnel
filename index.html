@@ -36,7 +36,8 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(38px,6.5vw,72px);l
   background:linear-gradient(180deg,#fff6d6 0%,#f0c868 45%,#b9821f 70%,#f3d27c 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 2px 0 #4a2f06) drop-shadow(0 0 20px rgba(232,185,74,.45)) drop-shadow(0 0 4px rgba(0,0,0,.9))}
 .sub{margin:.5em auto 0;max-width:34em;font-size:clamp(15px,2vw,19px);line-height:1.45;color:var(--ink);text-shadow:0 1px 6px rgba(0,0,0,.9);text-wrap:balance}
-.spaceTitle{font-family:var(--display);font-weight:800;font-size:clamp(22px,3.4vw,36px);color:var(--gold-hi);text-shadow:0 0 18px rgba(232,185,74,.5),0 1px 6px rgba(0,0,0,.9);margin:0}
+.spaceTitle{display:inline-block;font-family:var(--display);font-weight:800;font-size:clamp(20px,3vw,32px);color:var(--gold-hi);text-shadow:0 1px 4px rgba(0,0,0,.9);margin:0;
+  border-style:solid;border-width:0 34px;border-image:url(btn-bronze.png) 0 130 fill / 0 34px / 0 stretch;padding:12px 10px 14px;min-height:60px;box-sizing:border-box}
 .bottom{position:fixed;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;
   padding:0 max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 22px) max(16px,env(safe-area-inset-left,0px));
   pointer-events:none}
@@ -79,6 +80,9 @@ input[type=text]::placeholder{color:var(--mute)}
 .drop{border:1px dashed rgba(232,185,74,.6);border-radius:14px;padding:clamp(8px,1.6vh,16px) 12px;text-align:center;display:grid;gap:12px;justify-items:center;cursor:pointer;transition:background .2s}
 .drop.over{background:rgba(232,185,74,.14);border-color:var(--gold-hi)}
 .small{font-size:14px;color:var(--mute);line-height:1.5}
+.preview{display:block;width:100%;max-height:110px;object-fit:cover;border-radius:10px;border:1px solid rgba(232,185,74,.5)}
+#saveSpace{align-self:center;min-width:200px}
+.busy{text-align:center;font-weight:700}
 .saveNote{font-size:14px;line-height:1.5;color:var(--gold-hi);margin:0}
 .err{color:#ffb4a2;font-size:15px;margin:0}
 .busy{font-size:16px;color:var(--gold-hi)}
@@ -104,6 +108,7 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
 @media (prefers-reduced-motion:reduce){ .hand.minute{animation-duration:30s} .hand.hour{animation-duration:360s} .clock::before{animation:none} }
 @media (max-width:520px){ .card{padding:22px 18px} .gold,.ghost{min-height:48px;border-width:0 26px;border-image-width:0 26px;font-size:15px;padding:8px 4px 10px} }
 @media (prefers-reduced-motion:reduce){ .pulse{animation:none} }
+@media (max-width:700px){ .tip{bottom:calc(env(safe-area-inset-bottom,0px) + 190px)} }
 </style>
 </head>
 <body>
@@ -147,8 +152,10 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
     <div class="drop" id="drop" tabindex="0" role="button" aria-label="בחירת תמונה להעלאה">
       <button class="gold" id="pick" type="button" tabindex="-1">בחירת תמונה</button>
       <div class="small">אפשר גם לגרור לכאן תמונה או להדביק אותה (Ctrl+V). כל גודל ויחס תמונה.</div>
-      <div class="busy" id="busy" hidden></div>
+      <img class="preview" id="preview" alt="התמונה שנבחרה" hidden>
     </div>
+    <button class="gold" id="saveSpace" type="button" disabled>שמירת המרחב</button>
+    <div class="busy" id="busy" role="status" hidden></div>
     <p class="saveNote" id="saveNote"></p>
     <p class="err" id="err" hidden></p>
     <input type="file" id="file" accept="image/*" hidden>
@@ -583,36 +590,55 @@ function setSpin(on){ autoSpin = on; $('spin').setAttribute('aria-pressed', on ?
 /* ================= adding a space ================= */
 function showGate(){
   var rm = roomMesh.material; rm.opacity = 1; rm.transparent = false;
-  yaw = tYaw = 0; pitch = tPitch = 0;
+  yaw = tYaw = 0; pitch = tPitch = 0; resetNote();
   state = 'gate'; $('panel').hidden = false; $('note').hidden = true; noteOpen = false; showOnly('gateBar'); placeNote(); $('err').hidden = true; $('busy').hidden = true; $('spaceTop').hidden = true;
   $('saveNote').textContent = canShare ? 'המרחב יישמר במנהרה לכל מי שנכנס לקישור.' : 'המרחב יישמר רק במחשב שלכם, עד שתסגרו את הדף.';
   flashTo(0, 900); setTimeout(function(){ try { $('spaceTitle').focus({ preventScroll: true }); } catch(e){} }, 60);
   tip('לחצו על "הכניסו מרחב". אפשר גם לגרור ולהסתובב בחדר.', 6000);
 }
 function showError(t){ $('busy').hidden = true; $('err').textContent = t; $('err').hidden = false; }
+var pendingFile = null, saving = false;
 function takeFile(f){
-  if (!f || state !== 'gate') return;
+  if (!f || state !== 'gate' || saving) return;
   if (!/^image\//.test(f.type) && !/\.(jpe?g|png|webp|gif|avif|bmp)$/i.test(f.name || '')){ showError('הקובץ הזה אינו תמונה. בחרו קובץ JPG, PNG או WEBP.'); return; }
-  if (!$('spaceTitle').value.trim()){ showError('כתבו שם למרחב, ואז בחרו שוב את התמונה.'); try { $('spaceTitle').focus(); } catch(e){} return; }
-  $('err').hidden = true; var busy = $('busy'); busy.textContent = 'פותחים את המרחב...'; busy.hidden = false;
-  var url = URL.createObjectURL(f);
+  $('err').hidden = true; pendingFile = f;
+  var pv = $('preview'); if (pv.src) URL.revokeObjectURL(pv.src); pv.src = URL.createObjectURL(f); pv.hidden = false;
+  $('pick').textContent = 'החלפת תמונה';
+  updateSaveButton();
+}
+function updateSaveButton(){ $('saveSpace').disabled = saving || !pendingFile || !$('spaceTitle').value.trim(); }
+function resetNote(){
+  pendingFile = null; saving = false; var pv = $('preview'); if (pv.src) URL.revokeObjectURL(pv.src); pv.removeAttribute('src'); pv.hidden = true;
+  $('pick').textContent = 'בחירת תמונה'; $('busy').hidden = true; updateSaveButton();
+}
+function saveSpace(){
+  var title = $('spaceTitle').value.trim().slice(0, 40);
+  if (!title){ showError('כתבו שם למרחב. השם יופיע על האריח ובתוך המרחב.'); try { $('spaceTitle').focus(); } catch(e){} return; }
+  if (!pendingFile){ showError('בחרו תמונה למרחב.'); return; }
+  saving = true; updateSaveButton(); $('err').hidden = true;
+  var busy = $('busy'); busy.textContent = 'שומרים את המרחב...'; busy.hidden = false;
+  var url = URL.createObjectURL(pendingFile);
+  var done = function(it, isShared, note){
+    busy.textContent = isShared ? 'המרחב נשמר!' : 'המרחב נשמר במחשב שלכם.';
+    setTimeout(function(){ resetNote(); afterAdd(it, isShared); if (note) tip(note, 8000); }, 900);
+  };
   loadImage(url).then(function(im){
     URL.revokeObjectURL(url);
-    var c = toPanoCanvas(im, true), title = $('spaceTitle').value.trim().slice(0, 40);
-    if (!canShare){ var it = { title: title, canvas: c, id: 'l' + Date.now() }; local.push(it); rebuildTiles(); afterAdd(it, false); return; }
-    busy.textContent = 'שומרים את המרחב במנהרה... זה יכול לקחת כמה שניות';
+    var c = toPanoCanvas(im, true);
+    if (!canShare){ var it = { title: title, canvas: c, id: 'l' + Date.now() }; local.push(it); rebuildTiles(); done(it, false); return; }
+    busy.textContent = 'שומרים את המרחב במנהרה... זה לוקח כמה שניות';
     var send = c.width > 4096 ? shrink(c, 4096) : c, data = send.toDataURL('image/jpeg', .85).split(',')[1];
     fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ title: title, data: data }) })
       .then(function(r){ return r.json(); })
       .then(function(r){
         if (!r || !r.ok) throw r;
-        var it = { id: String(r.id), title: title, canvas: c };
-        shared.unshift(it); listSig = ''; rebuildTiles(); afterAdd(it, true);
+        var it = { id: String(r.id), title: title, canvas: c }; canvasCache[it.id] = c;
+        shared.unshift(it); listSig = ''; rebuildTiles(); done(it, true);
       }).catch(function(){
         var it = { title: title, canvas: c, id: 'l' + Date.now() }; local.push(it); rebuildTiles();
-        afterAdd(it, false); tip('השמירה במנהרה המשותפת נכשלה. המרחב נשמר רק אצלכם.', 8000);
+        done(it, false, 'השמירה במנהרה המשותפת נכשלה. המרחב נשמר רק אצלכם.');
       });
-  }).catch(function(){ URL.revokeObjectURL(url); showError('לא הצלחנו לפתוח את התמונה. שמרו אותה מחדש כ-JPG או PNG ונסו שוב.'); });
+  }).catch(function(){ URL.revokeObjectURL(url); saving = false; updateSaveButton(); busy.hidden = true; showError('לא הצלחנו לפתוח את התמונה. שמרו אותה מחדש כ-JPG או PNG ונסו שוב.'); });
 }
 function afterAdd(item, isShared){
   $('spaceTitle').value = ''; closeOpenTile();
@@ -720,7 +746,9 @@ function bindUI(){
   full.addEventListener('click', function(){ try { if (document.fullscreenElement) document.exitFullscreen(); else { var p = document.documentElement.requestFullscreen(); if (p && p.catch) p.catch(function(){}); } } catch(e){} });
   document.addEventListener('fullscreenchange', function(){ full.textContent = document.fullscreenElement ? 'יציאה ממסך מלא' : 'מסך מלא'; });
   var drop = $('drop'), file = $('file');
-  var pickFile = function(){ if (!$('spaceTitle').value.trim()){ showError('קודם כתבו שם למרחב.'); try { $('spaceTitle').focus(); } catch(e){} return; } $('err').hidden = true; file.click(); };
+  var pickFile = function(){ if (saving) return; $('err').hidden = true; file.click(); };
+  $('saveSpace').addEventListener('click', saveSpace);
+  $('spaceTitle').addEventListener('input', updateSaveButton);
   drop.addEventListener('click', pickFile);
   drop.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); pickFile(); } });
   file.addEventListener('change', function(){ takeFile(file.files[0]); file.value = ''; });
