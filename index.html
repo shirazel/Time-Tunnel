@@ -55,12 +55,11 @@ button:focus-visible,.drop:focus-visible,summary:focus-visible,input:focus-visib
 .panel .card{pointer-events:auto}
 @keyframes panelIn{from{opacity:0}to{opacity:1}}
 /* the note floats beside the altar, independent of the room, which can still be turned behind it */
-.card{position:absolute;right:max(16px,4vw);top:50%;transform:translateY(-50%);box-sizing:border-box;width:min(400px,calc(100vw - 32px));
+.card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);box-sizing:border-box;width:min(400px,calc(100vw - 32px));
   max-height:calc(100% - 150px);overflow:auto;display:flex;flex-direction:column;gap:12px;padding:22px 22px 20px;border:2px solid #b8862f;border-radius:18px;
   background:linear-gradient(180deg,rgba(16,11,4,.82),rgba(8,6,3,.9)),url(wall.jpg) center/480px;
   box-shadow:inset 0 0 0 4px rgba(0,0,0,.35),inset 0 0 0 5px rgba(240,200,110,.45),0 24px 70px rgba(0,0,0,.65);animation:noteIn .45s ease both}
-@keyframes noteIn{from{opacity:0;transform:translateY(-46%)}to{opacity:1;transform:translateY(-50%)}}
-@media (max-width:760px){ .card{right:auto;left:50%;transform:translate(-50%,-50%)} @keyframes noteIn{from{opacity:0;transform:translate(-50%,-46%)}to{opacity:1;transform:translate(-50%,-50%)}} }
+@keyframes noteIn{from{opacity:0;transform:translate(-50%,-46%)}to{opacity:1;transform:translate(-50%,-50%)}}
 .noteClose{position:absolute;top:10px;left:12px;border:0;background:none;color:var(--gold-hi);font-family:var(--body);font-size:15px;padding:8px;cursor:pointer;min-height:44px}
 .noteClose:hover{text-decoration:underline}
 .altar{position:fixed;transform:translate(-50%,-50%);z-index:4;font-size:20px;min-height:60px;animation:pulse 2.4s ease-in-out infinite}
@@ -278,8 +277,9 @@ function loadImage(src){ return new Promise(function(ok, bad){ var im = new Imag
 
 /* ================= the tunnel of tiles ================= */
 function floorMat(){
-  var t = new THREE.Texture(IMG.wall); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(3, 34); t.encoding = THREE.sRGBEncoding;
-  return new THREE.MeshStandardMaterial({ map: t, color: '#6b6258', roughness: .4, metalness: .35, envMapIntensity: .25 });
+  var t = new THREE.Texture(IMG.floor); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(2, 23); t.encoding = THREE.sRGBEncoding;
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return new THREE.MeshStandardMaterial({ map: t, color: '#c8bfb2', roughness: .32, metalness: .35, envMapIntensity: .5 });
 }
 function buildGallery(){
   var S = galleryScene = new THREE.Scene(); S.background = new THREE.Color('#060817'); S.fog = new THREE.FogExp2('#060817', .045);
@@ -298,8 +298,14 @@ function buildGallery(){
   var BACK = 3.2, LEN = 70;
   wallTex = new THREE.Texture(IMG.wall); wallTex.needsUpdate = true; wallTex.wrapS = wallTex.wrapT = THREE.RepeatWrapping;
   wallTex.repeat.set(10, 34); wallTex.encoding = THREE.sRGBEncoding; wallTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-  var wall = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.4, LEN, 64, 1, true), new THREE.MeshBasicMaterial({ map: wallTex, side: THREE.BackSide, toneMapped: false, color: '#c9c2b4' }));
+  var VAULT = .8;   // half-angle of the ceiling arc
+  wallTex.repeat.x = 10*(TAU - 2*VAULT)/TAU;
+  var wall = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.4, LEN, 64, 1, true, Math.PI + VAULT, TAU - 2*VAULT), new THREE.MeshBasicMaterial({ map: wallTex, side: THREE.BackSide, toneMapped: false, color: '#c9c2b4' }));
   wall.rotation.x = Math.PI/2; wall.position.set(0, 1.6, BACK - LEN/2); S.add(wall);
+  var ceilTex = new THREE.Texture(IMG.ceiling); ceilTex.needsUpdate = true; ceilTex.wrapS = ceilTex.wrapT = THREE.RepeatWrapping;
+  ceilTex.repeat.set(1, LEN/3.6); ceilTex.encoding = THREE.sRGBEncoding; ceilTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  var ceil = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.4, LEN, 32, 1, true, Math.PI - VAULT, 2*VAULT), new THREE.MeshBasicMaterial({ map: ceilTex, side: THREE.BackSide, toneMapped: false }));
+  ceil.rotation.x = Math.PI/2; ceil.position.set(0, 1.6, BACK - LEN/2); S.add(ceil);
   var floor = new THREE.Mesh(new THREE.PlaneGeometry(6.2, LEN), floorMat());
   floor.rotation.x = -Math.PI/2; floor.position.set(0, 0, BACK - LEN/2); S.add(floor);
   // the door you came through, closed behind you
@@ -412,15 +418,29 @@ function exitToEntry(){
   state = 'entry'; yaw = tYaw = 0; pitch = tPitch = .05; setFov(80); flashTo(0, 700);
   $('top').style.opacity = 1; $('topSub').textContent = 'גררו כדי להסתכל סביב. בקצה ההיכל מחכה לכם דלת הזהב.'; showOnly('entryBar'); $('spaceTop').hidden = true;
 }
-/* what you see inside an opening tile: a glimpse of the place it leads to, or the stone wall */
+/* an opening tile is a door: through it you look into the other room itself (a 360 portal), wrapped in a halo of light */
+var PORTAL_VS = 'varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }';
+var PORTAL_FS = 'uniform sampler2D map; uniform mat3 toLocal; uniform float glow; varying vec3 vW;' +
+  'void main(){ vec3 d = normalize(toLocal * normalize(vW - cameraPosition));' +
+  ' float a = atan(d.x, -d.z); float u = 0.5 + a / 6.2831853; float v = 0.5 + asin(clamp(d.y, -1.0, 1.0)) / 3.1415927;' +
+  ' vec3 c = texture2D(map, vec2(u, v)).rgb; gl_FragColor = vec4(c + glow * vec3(1.0, 0.8, 0.45), 1.0); }';
+var haloTex = null;
 function setTileWindow(t){
-  var u = t.userData, src = u.kind === 'plus' ? IMG.room : (u.item && u.item.canvas) || null, c = canvas(512, 512), x = c.getContext('2d');
-  if (src){ var w = src.naturalWidth || src.width, h = src.naturalHeight || src.height; x.drawImage(src, w*.4, h*.25, w*.2, h*.5, 0, 0, 512, 512); }
-  else x.drawImage(IMG.wall, 0, 0, 512, 512);
-  var g = x.createRadialGradient(256,256,180,256,256,380); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,.55)'); x.fillStyle = g; x.fillRect(0,0,512,512);
-  var tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding;
-  if (u.glow.material !== tileLight){ u.glow.material.map.dispose(); u.glow.material.dispose(); }
-  u.glow.material = new THREE.MeshBasicMaterial({ map: tex, toneMapped: false });
+  var u = t.userData, src = u.kind === 'plus' ? IMG.room : (u.item && u.item.canvas) || null;
+  if (u.glow.material !== tileLight){ if (u.glow.material.uniforms) u.glow.material.uniforms.map.value.dispose(); else if (u.glow.material.map) u.glow.material.map.dispose(); u.glow.material.dispose(); }
+  if (src){
+    var tex = new THREE.CanvasTexture(src.getContext ? src : toPanoCanvas(src, false));
+    t.updateMatrixWorld(); var m = new THREE.Matrix3().setFromMatrix4(t.matrixWorld).invert();
+    u.glow.material = new THREE.ShaderMaterial({ uniforms: { map: { value: tex }, toLocal: { value: m }, glow: { value: 0 } }, vertexShader: PORTAL_VS, fragmentShader: PORTAL_FS, toneMapped: false });
+  } else {
+    var wt = new THREE.Texture(IMG.wall); wt.needsUpdate = true; wt.encoding = THREE.sRGBEncoding;
+    u.glow.material = new THREE.MeshBasicMaterial({ map: wt, toneMapped: false });
+  }
+  if (!u.halo){
+    if (!haloTex) haloTex = glowTexture('rgba(255,236,190,1)', 'rgba(255,190,90,.45)');
+    u.halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTex, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+    u.halo.scale.set(TILE*2.6, TILE*2.6, 1); u.halo.position.set(0, 0, .12); t.add(u.halo);
+  }
 }
 var loadingTile = null;
 function ensureCanvas(item){
@@ -467,6 +487,8 @@ function runAnim(dt){
     var t = a.tile, u = t.userData;
     if (u.hinge) u.hinge.rotation.x = -1.1*ease(k*3);
     u.open = ease((k - .25)/.45); u.pivot.rotation.y = -1.55*u.open; u.glow.visible = u.open > 0;
+    if (u.halo) u.halo.material.opacity = .85*u.open;
+    if (u.glow.material.uniforms) u.glow.material.uniforms.glow.value = .25*(1 - u.open) + .08;
     yaw = tYaw = a.yaw0 + (a.yaw1 - a.yaw0)*ease(k*1.6); pitch = tPitch = a.pitch0 + (a.pitch1 - a.pitch0)*ease(k*1.6);
     var m = ease((k - .35)/.65); camera.position.lerpVectors(a.from, a.to, m); camZ = camera.position.z;
     if (k >= 1){ anim = null;
@@ -476,7 +498,7 @@ function runAnim(dt){
   }
 }
 function closeOpenTile(){
-  if (!openTile) return; var u = openTile.userData; u.pivot.rotation.y = 0; u.open = 0; u.glow.visible = false; if (u.hinge) u.hinge.rotation.x = 0; openTile = null;
+  if (!openTile) return; var u = openTile.userData; u.pivot.rotation.y = 0; u.open = 0; u.glow.visible = false; if (u.halo) u.halo.material.opacity = 0; if (u.hinge) u.hinge.rotation.x = 0; openTile = null;
 }
 function backToGallery(){
   $('altarBtn').hidden = true; $('toFrame').hidden = true; closeNote();
@@ -763,8 +785,8 @@ function start(){
   resize(); window.addEventListener('resize', resize);
   bindControls(); bindUI(); connectShared();
   var fontsReady = (document.fonts && document.fonts.load) ? Promise.all([document.fonts.load('40px "Suez One"'), document.fonts.ready]).catch(function(){}) : Promise.resolve();
-  Promise.all([loadImage('entrance.jpg'), loadImage('tile.jpg'), loadImage('tile-add.jpg'), loadImage('wall.jpg'), loadImage('gate-back.png'), loadImage('room.jpg'), fontsReady]).then(function(r){
-    IMG.tile = r[1]; IMG.tileAdd = r[2]; IMG.wall = r[3]; IMG.gate = r[4]; IMG.room = r[5];
+  Promise.all([loadImage('entrance.jpg'), loadImage('tile.jpg'), loadImage('tile-add.jpg'), loadImage('wall.jpg'), loadImage('gate-back.png'), loadImage('room.jpg'), loadImage('floor.jpg'), loadImage('ceiling.jpg'), fontsReady]).then(function(r){
+    IMG.tile = r[1]; IMG.tileAdd = r[2]; IMG.wall = r[3]; IMG.gate = r[4]; IMG.room = r[5]; IMG.floor = r[6]; IMG.ceiling = r[7];
     roomScene = new THREE.Scene(); roomScene.background = new THREE.Color('#060817'); roomMesh = panoMesh(toPanoCanvas(r[5], false)); roomScene.add(roomMesh);
     buildEntry(r[0]); buildGallery(); rebuildTiles();
     pitch = tPitch = .05; setFov(80); requestAnimationFrame(tick);
