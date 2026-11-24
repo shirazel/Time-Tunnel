@@ -6,38 +6,40 @@
 <title>מנהרת הזמן</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Suez+One&family=David+Libre:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&display=swap">
 <style>
 /* Layout: one full-screen WebGL stage in three acts (entrance hall, tunnel of golden tiles, a time space). Gilded type, one action row at the bottom, a glass card for adding a space. Single dark world by choice. */
 :root{
   --night:#060817; --gold:#e8b94a; --gold-hi:#ffe3a1; --gold-lo:#9a6a1a;
   --ink:#f7efdc; --mute:#b9b2d6; --glass:rgba(12,14,38,.8); --line:rgba(232,185,74,.45);
-  --display:'Suez One','David','Times New Roman',serif;
-  --body:'David Libre','David','Times New Roman',serif;
+  --display:'Heebo','Segoe UI',Arial,sans-serif;
+  --body:'Heebo','Segoe UI',Arial,sans-serif;
   --mono:ui-monospace,Consolas,'Courier New',monospace;
   color-scheme:dark;
 }
 html,body{height:100%;margin:0;background:var(--night);color:var(--ink);font-family:var(--body);overflow:hidden}
 body{direction:rtl}
 [hidden]{display:none!important}
+.tileLabel{position:fixed;transform:translate(-50%,-130%);pointer-events:none;z-index:6;font-family:var(--display);font-weight:800;font-size:20px;color:var(--gold-hi);
+  background:rgba(14,10,4,.85);border:1px solid rgba(232,185,74,.7);border-radius:999px;padding:6px 16px;white-space:nowrap;text-shadow:0 1px 3px #000;box-shadow:0 6px 24px rgba(0,0,0,.5)}
 #gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
 #gl.drag{cursor:grabbing}
 #gl.hover{cursor:pointer}
 .top{position:fixed;top:0;left:0;right:0;text-align:center;pointer-events:none;
   padding:calc(env(safe-area-inset-top,0px) + 20px) max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px));
   transition:opacity .8s}
-h1{font-family:var(--display);font-weight:400;font-size:clamp(38px,6.5vw,72px);line-height:1.05;margin:0;letter-spacing:.01em;text-wrap:balance;
+h1{font-family:var(--display);font-weight:800;font-size:clamp(38px,6.5vw,72px);line-height:1.05;margin:0;letter-spacing:.01em;text-wrap:balance;
   background:linear-gradient(180deg,#fff6d6 0%,#f0c868 45%,#b9821f 70%,#f3d27c 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 2px 0 #4a2f06) drop-shadow(0 0 20px rgba(232,185,74,.45)) drop-shadow(0 0 4px rgba(0,0,0,.9))}
 .sub{margin:.5em auto 0;max-width:34em;font-size:clamp(15px,2vw,19px);line-height:1.45;color:var(--ink);text-shadow:0 1px 6px rgba(0,0,0,.9);text-wrap:balance}
-.spaceTitle{font-family:var(--display);font-weight:400;font-size:clamp(22px,3.4vw,36px);color:var(--gold-hi);text-shadow:0 0 18px rgba(232,185,74,.5),0 1px 6px rgba(0,0,0,.9);margin:0}
+.spaceTitle{font-family:var(--display);font-weight:800;font-size:clamp(22px,3.4vw,36px);color:var(--gold-hi);text-shadow:0 0 18px rgba(232,185,74,.5),0 1px 6px rgba(0,0,0,.9);margin:0}
 .bottom{position:fixed;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;
   padding:0 max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 22px) max(16px,env(safe-area-inset-left,0px));
   pointer-events:none}
 .bottom > *{pointer-events:auto}
 button{font-family:var(--body);font-size:17px;cursor:pointer}
 .gold,.ghost{appearance:none;background:none;border-style:solid;border-color:transparent;border-width:0 32px;border-radius:0;
-  min-height:56px;box-sizing:border-box;padding:10px 8px 12px;font-family:var(--display);font-weight:400;font-size:18px;line-height:1.2;
+  min-height:56px;box-sizing:border-box;padding:10px 8px 12px;font-family:var(--display);font-weight:800;font-size:18px;line-height:1.2;
   transition:filter .2s, transform .2s}
 .gold{border-image:url(btn-gold.png) 0 150 fill / 0 32px / 0 stretch;color:#3a2200;text-shadow:0 1px 0 rgba(255,244,214,.7)}
 .ghost{border-image:url(btn-bronze.png) 0 130 fill / 0 32px / 0 stretch;color:var(--gold-hi);text-shadow:0 1px 3px rgba(0,0,0,.9)}
@@ -65,7 +67,7 @@ button:focus-visible,.drop:focus-visible,summary:focus-visible,input:focus-visib
 .altar{position:fixed;transform:translate(-50%,-50%);z-index:4;font-size:20px;min-height:60px;animation:pulse 2.4s ease-in-out infinite}
 .altar:hover{transform:translate(-50%,-50%) translateY(-1px)}
 @media (prefers-reduced-motion:reduce){ .panel{animation:none} }
-.card h2{font-family:var(--display);font-weight:400;font-size:clamp(20px,2.6vw,30px);text-align:center;line-height:1.1;margin:0;color:var(--gold-hi);text-wrap:balance;text-shadow:0 0 18px rgba(232,185,74,.45),0 2px 0 var(--gold-lo)}
+.card h2{font-family:var(--display);font-weight:800;font-size:clamp(20px,2.6vw,30px);text-align:center;line-height:1.1;margin:0;color:var(--gold-hi);text-wrap:balance;text-shadow:0 0 18px rgba(232,185,74,.45),0 2px 0 var(--gold-lo)}
 .card p{margin:0;font-size:clamp(13px,1.4vw,16px);line-height:1.4;text-align:center}
 label{font-weight:700;font-size:16px;display:grid;gap:6px}
 input[type=text]{font-family:var(--body);font-size:17px;padding:11px 18px;border-radius:999px;border:1px solid rgba(232,185,74,.6);background:rgba(20,14,6,.75);color:var(--ink);box-shadow:inset 0 2px 6px rgba(0,0,0,.6)}
@@ -113,6 +115,7 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
   <button class="ghost warn" id="removeSpace" type="button" hidden>הסרת המרחב</button>
 </div>
 <div class="tip" id="tip" hidden></div>
+<div class="tileLabel" id="tileLabel" hidden></div>
 
 <div class="flash" id="flash"></div>
 
@@ -215,7 +218,7 @@ function makeGoldBase(){
   goldBase = c;
 }
 function engraveText(x, text, cx, cy, size, maxW){
-  x.font = size + 'px "Suez One", David, serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.direction = 'rtl';
+  x.font = '800 ' + size + 'px Heebo, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.direction = 'rtl';
   var words = String(text).split(/\s+/), lines = [], line = '';
   words.forEach(function(w){ var test = line ? line + ' ' + w : w; if (x.measureText(test).width > maxW && line){ lines.push(line); line = w; } else line = test; });
   if (line) lines.push(line); lines = lines.slice(0, 2);
@@ -230,17 +233,18 @@ function tileTexture(kind, title){
   x.drawImage(kind === 'plus' ? IMG.tileAdd : IMG.tile, 0, 0, S, S);
   var label = kind === 'plus' ? 'הוספת מרחב' : title;
   if (label){
-    var w = 640, h = 104, px = (S - w)/2, py = S - 150;
+    var w = 860, h = 170, px = (S - w)/2, py = S - 215;
     x.save(); x.shadowColor = 'rgba(0,0,0,.55)'; x.shadowBlur = 18; x.shadowOffsetY = 6;
     var g = x.createLinearGradient(0, py, 0, py + h); g.addColorStop(0,'#3a2610'); g.addColorStop(1,'#1d1206');
     x.fillStyle = g; x.beginPath(); x.moveTo(px + 20, py); x.lineTo(px + w - 20, py); x.quadraticCurveTo(px + w, py, px + w, py + 20);
     x.lineTo(px + w, py + h - 20); x.quadraticCurveTo(px + w, py + h, px + w - 20, py + h); x.lineTo(px + 20, py + h);
     x.quadraticCurveTo(px, py + h, px, py + h - 20); x.lineTo(px, py + 20); x.quadraticCurveTo(px, py, px + 20, py); x.fill(); x.restore();
-    x.strokeStyle = 'rgba(240,200,110,.85)'; x.lineWidth = 4; x.strokeRect(px + 10, py + 10, w - 20, h - 20);
-    x.font = '52px "Suez One", David, serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.direction = 'rtl';
+    x.strokeStyle = 'rgba(240,200,110,.85)'; x.lineWidth = 6; x.strokeRect(px + 12, py + 12, w - 24, h - 24);
+    x.font = '800 92px Heebo, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.direction = 'rtl';
     var t = label; while (x.measureText(t).width > w - 60 && t.length > 4) t = t.slice(0, -2);
     if (t !== label) t = t.replace(/\s+$/, '') + '...';
-    var tg = x.createLinearGradient(0, py + 20, 0, py + h - 20); tg.addColorStop(0,'#fff0c2'); tg.addColorStop(1,'#d9a640');
+    var tg = x.createLinearGradient(0, py + 20, 0, py + h - 20); tg.addColorStop(0,'#fff6dc'); tg.addColorStop(1,'#f0c25a');
+    x.shadowColor = 'rgba(0,0,0,.8)'; x.shadowBlur = 6; x.shadowOffsetY = 3;
     x.fillStyle = tg; x.fillText(t, S/2, py + h/2 + 3);
   }
   var tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding; tex.anisotropy = renderer.capabilities.getMaxAnisotropy(); return tex;
@@ -393,6 +397,7 @@ function arriveGallery(){
   tip('לחצו על אריח כדי להיכנס למרחב. גררו כדי להסתובב באולם.', 7000);
 }
 function exitToEntry(){
+  $('tileLabel').hidden = true;
   resetEntryMesh();
   state = 'entry'; yaw = tYaw = 0; pitch = tPitch = .05; setFov(80); flashTo(0, 700);
   $('top').style.opacity = 1; $('topSub').textContent = 'גררו כדי להסתכל סביב. בקצה ההיכל מחכה לכם דלת הזהב.'; showOnly('entryBar'); $('spaceTop').hidden = true;
@@ -447,6 +452,7 @@ function openTileAnim(t){
   var targetYaw = Math.atan2(-dx, -dz), targetPitch = Math.atan2(dy, Math.hypot(dx, dz));
   targetYaw = yaw + wrapAngle(targetYaw - yaw);
   setTileWindow(t);
+  $('tileLabel').hidden = true;
   openTile = t; state = 'toSpace'; showOnly(null); $('gl').classList.remove('hover'); $('tip').hidden = true;
   var n = new THREE.Vector3(-p.x, 0, 0).normalize();
   anim = { t: 0, dur: reduce ? .01 : 1.9, tile: t, yaw0: yaw, pitch0: pitch, yaw1: targetYaw, pitch1: targetPitch,
@@ -609,7 +615,9 @@ function bindControls(){
       tYaw = drag.yaw + dx*.005*(fov/72); tPitch = Math.max(-pitchMax(), Math.min(pitchMax(), drag.pitch + dy*.004)); return; }
     if (state === 'entry') cv.classList.toggle('hover', onEntryDoor(e));
     else if (state === 'gallery'){ var h = hitGallery(e); hoverTile = h && h !== 'exit' ? h : null; cv.classList.toggle('hover', !!h);
-      if (hoverTile && hoverTile.userData.kind === 'shared') ensureCanvas(hoverTile.userData.item).catch(function(){}); }
+      if (hoverTile && hoverTile.userData.kind === 'shared') ensureCanvas(hoverTile.userData.item).catch(function(){});
+      var lab = $('tileLabel'); lab.hidden = !hoverTile;
+      if (hoverTile){ lab.textContent = hoverTile.userData.kind === 'plus' ? 'הוספת מרחב' : (hoverTile.userData.item.title || 'מרחב זמן'); lab.style.left = e.clientX + 'px'; lab.style.top = e.clientY + 'px'; } }
   });
   var up = function(e){
     delete pts[e.pointerId]; if (pinch){ if (Object.keys(pts).length < 2) pinch = null; return; }
@@ -758,7 +766,7 @@ function start(){
   spaceScene = new THREE.Scene(); spaceScene.background = new THREE.Color('#060817');
   resize(); window.addEventListener('resize', resize);
   bindControls(); bindUI(); connectShared();
-  var fontsReady = (document.fonts && document.fonts.load) ? Promise.all([document.fonts.load('40px "Suez One"'), document.fonts.ready]).catch(function(){}) : Promise.resolve();
+  var fontsReady = (document.fonts && document.fonts.load) ? Promise.all([document.fonts.load('800 40px Heebo'), document.fonts.ready]).catch(function(){}) : Promise.resolve();
   Promise.all([loadImage('entrance.jpg'), loadImage('tile.jpg'), loadImage('tile-plus.jpg'), loadImage('wall.jpg'), loadImage('hall.jpg'), loadImage('room.jpg'), loadImage('tile-back.jpg'), fontsReady]).then(function(r){
     IMG.tile = r[1]; IMG.tileAdd = r[2]; IMG.wall = r[3]; IMG.hall = r[4]; IMG.room = r[5]; IMG.tileBack = r[6];
     roomScene = new THREE.Scene(); roomScene.background = new THREE.Color('#060817'); roomMesh = panoMesh(toPanoCanvas(r[5], false)); roomScene.add(roomMesh);
