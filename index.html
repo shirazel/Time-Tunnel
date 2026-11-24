@@ -103,8 +103,7 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
 </div>
 <div class="bottom" id="galleryBar" hidden>
   <button class="ghost" id="exitTunnel" type="button">יציאה מהמנהרה</button>
-  <button class="ghost" id="walkBack" type="button">אחורה</button>
-  <button class="ghost" id="walkFwd" type="button">קדימה</button>
+  <button class="ghost" id="morePage" type="button" hidden>עוד מרחבים</button>
   <button class="gold" id="addSpace" type="button">הוספת מרחב</button>
 </div>
 <div class="bottom" id="spaceBar" hidden>
@@ -282,8 +281,8 @@ function floorMat(){
   return new THREE.MeshStandardMaterial({ map: t, color: '#c8bfb2', roughness: .32, metalness: .35, envMapIntensity: .5 });
 }
 function buildGallery(){
-  var S = galleryScene = new THREE.Scene(); S.background = new THREE.Color('#060817'); S.fog = new THREE.FogExp2('#060817', .045);
-  // a warm studio for the gold to reflect
+  var S = galleryScene = new THREE.Scene(); S.background = new THREE.Color('#060817');
+  // a warm studio for the gold tiles to reflect
   var env = new THREE.Scene(), ec = canvas(512, 256), ex = ec.getContext('2d'), eg = ex.createLinearGradient(0,0,0,256);
   eg.addColorStop(0,'#1a2366'); eg.addColorStop(.42,'#ffd58a'); eg.addColorStop(.5,'#fff1cf'); eg.addColorStop(.6,'#8a5a1c'); eg.addColorStop(1,'#140c05');
   ex.fillStyle = eg; ex.fillRect(0,0,512,256);
@@ -291,42 +290,21 @@ function buildGallery(){
   var et = new THREE.CanvasTexture(ec); et.encoding = THREE.sRGBEncoding;
   env.add(new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), new THREE.MeshBasicMaterial({ map: et, side: THREE.BackSide })));
   var pm = new THREE.PMREMGenerator(renderer); S.environment = pm.fromScene(env, .02).texture; pm.dispose();
-
-  S.add(new THREE.HemisphereLight('#7f8fff', '#2a1806', .35));
-  var follow = new THREE.PointLight('#ffd9a0', 1.1, 7, 1.5); follow.name = 'follow'; S.add(follow);
-
-  var BACK = 3.2, LEN = 70;
-  wallTex = new THREE.Texture(IMG.wall); wallTex.needsUpdate = true; wallTex.wrapS = wallTex.wrapT = THREE.RepeatWrapping;
-  wallTex.repeat.set(10, 34); wallTex.encoding = THREE.sRGBEncoding; wallTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-  var VAULT = .8;   // half-angle of the ceiling arc
-  wallTex.repeat.x = 10*(TAU - 2*VAULT)/TAU;
-  var wall = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.4, LEN, 64, 1, true, Math.PI + VAULT, TAU - 2*VAULT), new THREE.MeshBasicMaterial({ map: wallTex, side: THREE.BackSide, toneMapped: false, color: '#c9c2b4' }));
-  wall.rotation.x = Math.PI/2; wall.position.set(0, 1.6, BACK - LEN/2); S.add(wall);
-  var ceilTex = new THREE.Texture(IMG.ceiling); ceilTex.needsUpdate = true; ceilTex.wrapS = ceilTex.wrapT = THREE.RepeatWrapping;
-  ceilTex.repeat.set(1, LEN/3.6); ceilTex.encoding = THREE.sRGBEncoding; ceilTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-  var ceil = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.4, LEN, 32, 1, true, Math.PI - VAULT, 2*VAULT), new THREE.MeshBasicMaterial({ map: ceilTex, side: THREE.BackSide, toneMapped: false }));
-  ceil.rotation.x = Math.PI/2; ceil.position.set(0, 1.6, BACK - LEN/2); S.add(ceil);
-  var floor = new THREE.Mesh(new THREE.PlaneGeometry(6.2, LEN), floorMat());
-  floor.rotation.x = -Math.PI/2; floor.position.set(0, 0, BACK - LEN/2); S.add(floor);
-  // the door you came through, closed behind you
-  exitDoor = new THREE.Group(); exitDoor.position.set(0, 0, BACK - .05); exitDoor.rotation.y = Math.PI; S.add(exitDoor);
-  var gateTex = new THREE.Texture(IMG.gate); gateTex.needsUpdate = true; gateTex.encoding = THREE.sRGBEncoding;
-  var gate = new THREE.Mesh(new THREE.PlaneGeometry(3.1, 3.1*584/614), new THREE.MeshBasicMaterial({ map: gateTex, transparent: true, toneMapped: false, depthWrite: false }));
-  gate.position.set(0, 1.55, .03);
-  var dg = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture('rgba(255,240,200,.7)','rgba(255,190,90,.18)'), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
-  dg.scale.set(4, 4, 1); dg.position.set(0, 1.6, .3);
-  exitDoor.add(gate, dg);
-  var backTex = wallTex.clone(); backTex.needsUpdate = true; backTex.repeat.set(2, 2);
-  var backWall = new THREE.Mesh(new THREE.CircleGeometry(3.4, 64), new THREE.MeshBasicMaterial({ map: backTex, toneMapped: false, color: '#c9c2b4' }));
-  backWall.position.set(0, 1.6, BACK + .02); backWall.rotation.y = Math.PI; S.add(backWall);
-  var exitHit = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 3.8), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
-  exitHit.position.set(0, 1.8, .1); exitHit.userData.exit = true; exitDoor.add(exitHit);
-
-  var N = 600, pos = new Float32Array(N*3);
-  for (var i = 0; i < N; i++){ var a = Math.random()*TAU, r = .5 + Math.random()*2.6; pos[i*3] = Math.cos(a)*r; pos[i*3+1] = Math.sin(a)*r; pos[i*3+2] = BACK - Math.random()*45; }
-  var sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  sparks = new THREE.Points(sg, new THREE.PointsMaterial({ size: .06, map: glowTexture('rgba(255,250,230,1)','rgba(255,214,130,.6)'), color: '#ffe3a1', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
-  sparks.position.set(0, 1.6, 0); S.add(sparks);
+  S.add(new THREE.HemisphereLight('#ffe2b0', '#2a1806', .55));
+  var follow = new THREE.PointLight('#ffd9a0', .9, 8, 1.5); follow.position.set(0, 2.2, 0); S.add(follow);
+  S.add(panoMesh(toPanoCanvas(IMG.hall, false)));
+}
+/* the niches painted in hall.jpg, in pixels of the 1774x887 original: inner opening left and right; the sill line */
+var NICHES = [[40,138],[232,322],[403,492],[560,648],[712,797],[847,928],[980,1062],[1128,1212],[1283,1373],[1450,1540],[1622,1735]];
+var NICHE_SILL = 522, IW = 1774, IH = 887, NICHE_R = 3;
+var PLUS_NICHE = 5, SPACE_NICHES = [4,6,3,7,2,8,1,9,0,10];   // the add tile faces you; spaces fill outward from it
+var page = 0;
+function nicheTransform(n){
+  var L = NICHES[n][0], Rr = NICHES[n][1], cx = (L + Rr)/2, angW = (Rr - L)/IW*TAU*.86;
+  var hpx = angW/Math.PI*IH, cy = NICHE_SILL - hpx/2 - 4;
+  var a = (cx/IW - .5)*TAU, lat = (.5 - cy/IH)*Math.PI;
+  var dir = new THREE.Vector3(Math.sin(a)*Math.cos(lat), Math.sin(lat), -Math.cos(a)*Math.cos(lat));
+  return { pos: dir.multiplyScalar(NICHE_R).add(new THREE.Vector3(0, 1.6, 0)), size: 2*NICHE_R*Math.tan(angW/2) };
 }
 
 var tileGeo, tileGold, tileBack, tileLight, ringGeo, bossGeo;
@@ -358,27 +336,22 @@ function makeTile(kind, item){
   g.userData = { kind: kind, item: item, pivot: pivot, hinge: hinge, face: face, glow: glowPlane, hover: 0, open: 0 };
   return g;
 }
-function slotTransform(i){
-  var k = Math.floor(i/4), j = i % 4, right = j % 2 === 0, upper = j < 2;
-  var a = (right ? 0 : Math.PI) + (upper ? (right ? ROW_A : -ROW_A) : (right ? -ROW_A : ROW_A));
-  var z = FIRST_Z - k*SLOT;
-  return { x: R*Math.cos(a), y: 1.6 + R*Math.sin(a), z: z };
-}
 function rebuildTiles(){
   tiles.forEach(function(t){ galleryScene.remove(t); t.userData.face.map.dispose(); t.userData.face.dispose(); });
   tiles = []; hitList = [];
-  var list = [{ kind: 'plus' }].concat(shared.map(function(s){ return { kind: 'shared', item: s }; }), local.map(function(s){ return { kind: 'local', item: s }; }));
-  list.forEach(function(entry, i){
-    var t = makeTile(entry.kind === 'plus' ? 'plus' : 'space', entry.item);
-    var p = slotTransform(i); t.position.set(p.x, p.y, p.z); t.lookAt(0, p.y, p.z);
+  var all = shared.map(function(s){ return { kind: 'shared', item: s }; }).concat(local.map(function(s){ return { kind: 'local', item: s }; }));
+  var per = SPACE_NICHES.length, pages = Math.max(1, Math.ceil(all.length/per)); if (page >= pages) page = 0;
+  $('morePage').hidden = pages < 2;
+  var list = [{ kind: 'plus', niche: PLUS_NICHE }].concat(all.slice(page*per, page*per + per).map(function(e, i){ e.niche = SPACE_NICHES[i]; return e; }));
+  list.forEach(function(entry){
+    var t = makeTile(entry.kind === 'plus' ? 'plus' : 'space', entry.item), n = nicheTransform(entry.niche);
+    t.position.copy(n.pos); t.lookAt(0, 1.6, 0); t.userData.base = n.size/TILE; t.scale.setScalar(t.userData.base);
     galleryScene.add(t); tiles.push(t);
     t.traverse(function(o){ if (o.userData && o.userData.tile) hitList.push(o); });
     if (entry.kind === 'plus') plusTile = t;
   });
-  var exitHit = null; exitDoor.traverse(function(o){ if (o.userData && o.userData.exit) exitHit = o; }); hitList.push(exitHit);
   if (openTile && tiles.indexOf(openTile) < 0) openTile = null;
 }
-function maxWalk(){ return FIRST_Z - Math.max(0, Math.ceil(tiles.length/4) - 1)*SLOT - .4; }
 
 /* ================= entrance ================= */
 function buildEntry(img){
@@ -409,9 +382,9 @@ function enterTunnel(){
 function resetEntryMesh(){ var em = entryMesh.material; em.opacity = 1; em.transparent = false; entryMesh.position.z = 0; }
 function arriveGallery(){
   resetEntryMesh();
-  state = 'gallery'; camZ = 2.1; tCamZ = .4; yaw = tYaw = 0; pitch = tPitch = 0; setFov(72);
+  state = 'gallery'; camZ = tCamZ = 0; yaw = tYaw = 0; pitch = tPitch = 0; setFov(72);
   $('top').style.opacity = 0; showOnly('galleryBar'); flashTo(0, 1000);
-  tip('לחצו על ידית של אריח כדי להיכנס למרחב. גלגלת העכבר מתקדמת במנהרה.', 7000);
+  tip('לחצו על אריח כדי להיכנס למרחב. גררו כדי להסתובב באולם.', 7000);
 }
 function exitToEntry(){
   resetEntryMesh();
@@ -471,7 +444,7 @@ function openTileAnim(t){
   openTile = t; state = 'toSpace'; showOnly(null); $('gl').classList.remove('hover'); $('tip').hidden = true;
   var n = new THREE.Vector3(-p.x, 0, 0).normalize();
   anim = { t: 0, dur: reduce ? .01 : 1.9, tile: t, yaw0: yaw, pitch0: pitch, yaw1: targetYaw, pitch1: targetPitch,
-    from: new THREE.Vector3(0, 1.6, camZ), to: new THREE.Vector3(p.x + n.x*1.05, 1.6 + dy*.7, p.z) };
+    from: new THREE.Vector3(0, 1.6, 0), to: new THREE.Vector3(0, 1.6, 0).lerp(p, .55) };
 }
 function runAnim(dt){
   var a = anim; a.t += dt; var k = a.t / a.dur;
@@ -504,7 +477,7 @@ function backToGallery(){
   $('altarBtn').hidden = true; $('toFrame').hidden = true; closeNote();
   closeOpenTile(); state = 'gallery'; $('panel').hidden = true; $('spaceTop').hidden = true; $('tip').hidden = true;
   var p = galleryPose || { z: 1.2, yaw: 0, pitch: 0 };
-  camZ = tCamZ = p.z; yaw = tYaw = p.yaw; pitch = tPitch = p.pitch; setFov(72); camera.position.set(0, 1.6, camZ);
+  camZ = tCamZ = 0; yaw = tYaw = p.yaw; pitch = tPitch = p.pitch; setFov(72); camera.position.set(0, 1.6, 0);
   showOnly('galleryBar'); flashTo(0, 800); setSpin(false);
 }
 
@@ -611,7 +584,7 @@ function pitchMax(){ return state === 'space' || state === 'gate' ? .55 : state 
 function hitGallery(e){
   pointer.x = (e.clientX/innerWidth)*2 - 1; pointer.y = -(e.clientY/innerHeight)*2 + 1;
   raycaster.setFromCamera(pointer, camera); var h = raycaster.intersectObjects(hitList, false);
-  if (!h.length) return null; var o = h[0].object; return o.userData.exit ? 'exit' : o.userData.tile;
+  if (!h.length) return null; return h[0].object.userData.tile;
 }
 function bindControls(){
   var cv = $('gl');
@@ -642,22 +615,18 @@ function bindControls(){
   cv.addEventListener('pointerup', up);
   cv.addEventListener('pointercancel', function(e){ delete pts[e.pointerId]; drag = null; pinch = null; cv.classList.remove('drag'); });
   cv.addEventListener('wheel', function(e){ e.preventDefault();
-    if (state === 'gallery') tCamZ = Math.max(maxWalk(), Math.min(1.2, tCamZ - e.deltaY*.004));
-    else if (canLook() && state !== 'gate') setFov(fov + e.deltaY*.03); }, { passive: false });
+    if (canLook() && state !== 'gate') setFov(fov + e.deltaY*.03); }, { passive: false });
   window.addEventListener('keydown', function(e){
     if (!canLook() || (e.target && e.target.tagName === 'INPUT')) return;
     if (e.key === 'ArrowLeft') tYaw += .25; if (e.key === 'ArrowRight') tYaw -= .25;
-    if (state === 'gallery'){ if (e.key === 'ArrowUp') walk(1); if (e.key === 'ArrowDown') walk(-1); }
-    else { if (e.key === 'ArrowUp') tPitch = Math.min(pitchMax(), tPitch + .12); if (e.key === 'ArrowDown') tPitch = Math.max(-pitchMax(), tPitch - .12); }
+    if (e.key === 'ArrowUp') tPitch = Math.min(pitchMax(), tPitch + .12); if (e.key === 'ArrowDown') tPitch = Math.max(-pitchMax(), tPitch - .12);
   });
 }
-function walk(dir){ tCamZ = Math.max(maxWalk(), Math.min(1.2, tCamZ - dir*SLOT)); }
 
 function bindUI(){
   $('enterDoor').addEventListener('click', enterTunnel);
   $('exitTunnel').addEventListener('click', exitToEntry);
-  $('walkFwd').addEventListener('click', function(){ walk(1); });
-  $('walkBack').addEventListener('click', function(){ walk(-1); });
+  $('morePage').addEventListener('click', function(){ if (state !== 'gallery') return; page++; rebuildTiles(); });
   $('addSpace').addEventListener('click', function(){ if (state === 'gallery' && plusTile) openTileAnim(plusTile); });
   $('backTunnel').addEventListener('click', backToGallery);
   $('panelBack').addEventListener('click', backToGallery);
@@ -694,16 +663,11 @@ function bindUI(){
 function resize(){ var w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w/h; camera.updateProjectionMatrix(); if (state === 'gate') placeNote(); }
 function animateGallery(dt, t){
   var m = reduce ? 0 : 1;
-  sparks.rotation.z += dt*.05*m;
-  var arr = sparks.geometry.attributes.position.array;
-  for (var k = 2; k < arr.length; k += 3){ arr[k] -= dt*.5*m; if (arr[k] < -42) arr[k] += 45; }
-  sparks.geometry.attributes.position.needsUpdate = true;
   tiles.forEach(function(tl){ var u = tl.userData, target = tl === hoverTile && state === 'gallery' ? 1 : 0;
     u.hover += (target - u.hover)*Math.min(1, dt*8);
-    u.face.emissiveIntensity = .3 + .6*u.hover; tl.scale.setScalar(1 + .04*u.hover);
+    u.face.emissiveIntensity = .3 + .6*u.hover; tl.scale.setScalar((u.base || 1)*(1 + .03*u.hover));
     if (u.hinge && state === 'gallery') u.hinge.rotation.x = -.5*u.hover + (m ? .04*Math.sin(t*1.3 + tl.position.z) : 0);
   });
-  var f = galleryScene.getObjectByName('follow'); f.position.set(0, 2.3, camera.position.z - 1.2);
 }
 var ROOM_FOV = 92;   // wide, so the whole observatory moves around the framed note
 function roomYaw(t){ return reduce ? 0 : .13*Math.sin(t*.11); }
@@ -748,7 +712,7 @@ function tick(){
   if (state === 'toGallery' && anim){
     camera.fov = anim.efov; camera.updateProjectionMatrix(); camera.position.set(0, 1.6, 0);
     if (anim.mix > 0){
-      gcam.aspect = camera.aspect; gcam.updateProjectionMatrix(); gcam.position.set(0, 1.6, 3.0 - .9*anim.mix);
+      gcam.aspect = camera.aspect; gcam.fov = 60 + 12*anim.mix; gcam.updateProjectionMatrix(); gcam.position.set(0, 1.6, 0); gcam.rotation.set(0, 0, 0);
       animateGallery(dt, t); renderer.render(galleryScene, gcam);
       var em = entryMesh.material; em.transparent = true; em.opacity = 1 - anim.mix;
       var bg = entryScene.background; entryScene.background = null;
@@ -785,8 +749,8 @@ function start(){
   resize(); window.addEventListener('resize', resize);
   bindControls(); bindUI(); connectShared();
   var fontsReady = (document.fonts && document.fonts.load) ? Promise.all([document.fonts.load('40px "Suez One"'), document.fonts.ready]).catch(function(){}) : Promise.resolve();
-  Promise.all([loadImage('entrance.jpg'), loadImage('tile.jpg'), loadImage('tile-add.jpg'), loadImage('wall.jpg'), loadImage('gate-back.png'), loadImage('room.jpg'), loadImage('floor.jpg'), loadImage('ceiling.jpg'), fontsReady]).then(function(r){
-    IMG.tile = r[1]; IMG.tileAdd = r[2]; IMG.wall = r[3]; IMG.gate = r[4]; IMG.room = r[5]; IMG.floor = r[6]; IMG.ceiling = r[7];
+  Promise.all([loadImage('entrance.jpg'), loadImage('tile.jpg'), loadImage('tile-add.jpg'), loadImage('wall.jpg'), loadImage('hall.jpg'), loadImage('room.jpg'), fontsReady]).then(function(r){
+    IMG.tile = r[1]; IMG.tileAdd = r[2]; IMG.wall = r[3]; IMG.hall = r[4]; IMG.room = r[5];
     roomScene = new THREE.Scene(); roomScene.background = new THREE.Color('#060817'); roomMesh = panoMesh(toPanoCanvas(r[5], false)); roomScene.add(roomMesh);
     buildEntry(r[0]); buildGallery(); rebuildTiles();
     pitch = tPitch = .05; setFov(80); requestAnimationFrame(tick);
