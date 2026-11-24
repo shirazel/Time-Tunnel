@@ -89,12 +89,12 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
   background:rgba(0,0,0,.4);border:1px solid rgba(232,185,74,.2);border-radius:12px;padding:14px;margin:0 0 10px;max-height:200px;overflow:auto;color:var(--ink)}
 .row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
 .msg{position:fixed;inset:0;display:grid;place-items:center;text-align:center;padding:24px;font-size:18px;line-height:1.6}
-.loader{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;font-family:var(--display);font-weight:700;font-size:22px;color:var(--gold-hi);background:var(--night);transition:opacity .9s;
+.loader{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;font-family:var(--display);font-weight:700;font-size:22px;color:var(--gold-hi);background:linear-gradient(rgba(6,8,23,.72),rgba(6,8,23,.86)),url(wall.jpg) center/440px,var(--night);transition:opacity .9s;
   padding:0 max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
 .loader p{margin:0;text-shadow:0 0 14px rgba(232,185,74,.5)}
-.clock{position:relative;width:min(56vmin,360px);aspect-ratio:1}
+.clock{position:relative;width:min(38vmin,240px);aspect-ratio:1}
 .clock::before{content:"";position:absolute;inset:-18%;border-radius:50%;background:radial-gradient(circle,rgba(255,214,130,.55) 30%,rgba(255,180,80,.18) 55%,rgba(0,0,0,0) 70%);animation:clockGlow 3.2s ease-in-out infinite}
-.clock img{position:relative;display:block;width:100%;height:100%;border-radius:50%}
+.clock img{position:relative;display:block;width:100%;height:100%;clip-path:circle(47.5% at 50% 50%)}
 .clock svg{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 2px 2px rgba(0,0,0,.55))}
 .hand{transform-box:view-box;transform-origin:100px 100px;animation-name:spinBack;animation-timing-function:linear;animation-iteration-count:infinite}
 .hand.minute{animation-duration:2.2s}
