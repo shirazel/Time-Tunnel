@@ -372,7 +372,7 @@ function buildGallery(){
 var NICHES = [[40,138],[232,322],[403,492],[560,648],[712,797],[847,928],[980,1062],[1128,1212],[1283,1373],[1450,1540],[1622,1735]];
 var NICHE_SILL = 522, IW = 1774, IH = 887, NICHE_R = 3;
 var PLUS_NICHE = 5, SPACE_NICHES = [4,6,3,7,2,8,1,9,0,10];   // the add tile faces you; spaces fill outward from it
-var page = 0;
+var page = 0, HALL_FOV = 90;   // the hall opens at its widest view
 function nicheTransform(n){
   var L = NICHES[n][0], Rr = NICHES[n][1], cx = (L + Rr)/2, angW = (Rr - L)/IW*TAU*.72;
   var hpx = angW/Math.PI*IH, cy = NICHE_SILL - hpx/2 - 12;
@@ -494,7 +494,7 @@ function resetEntryMesh(){ var em = entryMesh.material; em.opacity = 1; em.trans
 function arriveGallery(){
   stopTicking();
   resetEntryMesh();
-  state = 'gallery'; camZ = tCamZ = 0; yaw = tYaw = 0; pitch = tPitch = 0; setFov(72);
+  state = 'gallery'; camZ = tCamZ = 0; yaw = tYaw = 0; pitch = tPitch = 0; setFov(HALL_FOV);
   $('top').style.opacity = 0; showOnly('galleryBar'); flashTo(0, 1000);
   tip('לחצו על אריח כדי להיכנס למרחב. גררו כדי להסתובב באולם.', 7000);
 }
@@ -595,7 +595,7 @@ function backToGallery(){
   $('altarBtn').hidden = true; $('toFrame').hidden = true; closeNote();
   closeOpenTile(); state = 'gallery'; $('panel').hidden = true; $('spaceTop').hidden = true; $('tip').hidden = true;
   var p = galleryPose || { z: 1.2, yaw: 0, pitch: 0 };
-  camZ = tCamZ = 0; yaw = tYaw = p.yaw; pitch = tPitch = p.pitch; setFov(72); camera.position.set(0, 1.6, 0);
+  camZ = tCamZ = 0; yaw = tYaw = p.yaw; pitch = tPitch = p.pitch; setFov(HALL_FOV); camera.position.set(0, 1.6, 0);
   showOnly('galleryBar'); flashTo(0, 800); setSpin(false);
 }
 
@@ -879,7 +879,7 @@ function tick(){
   if (state === 'toGallery' && anim){
     camera.fov = anim.efov; camera.updateProjectionMatrix(); camera.position.set(0, 1.6, 0);
     if (anim.mix > 0){
-      gcam.aspect = camera.aspect; gcam.fov = 60 + 12*anim.mix; gcam.updateProjectionMatrix(); gcam.position.set(0, 1.6, 0); gcam.rotation.set(0, 0, 0);
+      gcam.aspect = camera.aspect; gcam.fov = 60 + (HALL_FOV - 60)*anim.mix; gcam.updateProjectionMatrix(); gcam.position.set(0, 1.6, 0); gcam.rotation.set(0, 0, 0);
       animateGallery(dt, t); renderer.render(galleryScene, gcam);
       var em = entryMesh.material; em.transparent = true; em.opacity = 1 - anim.mix;
       var bg = entryScene.background; entryScene.background = null;
