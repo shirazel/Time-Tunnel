@@ -616,7 +616,7 @@ function openSpace(item, isShared){
   $('spaceBy').textContent = item.creator ? 'נוצר על ידי ' + item.creator : ''; $('spaceBy').hidden = !item.creator;
   $('spaceTop').hidden = !item.title; $('busy').hidden = true;
   removeArmed = false; var rm = $('removeSpace'); rm.classList.remove('armed'); rm.textContent = 'הסרת המרחב';
-  rm.hidden = isShared;
+  rm.hidden = isShared && !myKeys()[item.id];
   var show = function(c){
     if (spaceMesh){ spaceScene.remove(spaceMesh); disposeMesh(spaceMesh); }
     spaceMesh = panoMesh(c); spaceScene.add(spaceMesh);
@@ -648,6 +648,8 @@ function showGate(){
 }
 function showError(t){ $('busy').hidden = true; $('err').textContent = t; $('err').hidden = false; }
 var pendingFile = null, saving = false;
+function myKeys(){ try { return JSON.parse(localStorage.getItem('timeTunnelKeys') || '{}') || {}; } catch(e){ return {}; } }
+function setKey(id, key){ try { var k = myKeys(); if (key) k[id] = key; else delete k[id]; localStorage.setItem('timeTunnelKeys', JSON.stringify(k)); } catch(e){} }
 function takeFile(f){
   if (!f || state !== 'gate' || saving) return;
   if (!/^image\//.test(f.type) && !/\.(jpe?g|png|webp|gif|avif|bmp)$/i.test(f.name || '')){ showError('הקובץ הזה אינו תמונה. בחרו קובץ JPG, PNG או WEBP.'); return; }
@@ -685,6 +687,7 @@ function saveSpace(){
       .then(function(r){
         if (!r || !r.ok) throw r;
         var it = { id: String(r.id), title: title, creator: creator, canvas: c }; canvasCache[it.id] = c;
+        if (r.key) setKey(it.id, String(r.key));
         shared.unshift(it); listSig = ''; rebuildTiles(); done(it, true);
       }).catch(function(){
         var it = { title: title, creator: creator, canvas: c, id: 'l' + Date.now() }; local.push(it); rebuildTiles();
@@ -699,8 +702,20 @@ function afterAdd(item, isShared){
 function removeCurrent(){
   var rm = $('removeSpace');
   if (!removeArmed){ removeArmed = true; rm.classList.add('armed'); rm.textContent = 'ללחוץ שוב כדי להסיר'; setTimeout(function(){ removeArmed = false; rm.classList.remove('armed'); rm.textContent = 'הסרת המרחב'; }, 4000); return; }
-  var c = current; if (!c || c.shared) return;
-  local = local.filter(function(s){ return s !== c.item; }); rebuildTiles(); backToGallery();
+  var c = current; if (!c) return;
+  if (!c.shared){ local = local.filter(function(s){ return s !== c.item; }); rebuildTiles(); backToGallery(); return; }
+  var key = myKeys()[c.item.id]; if (!key) return;
+  rm.disabled = true; rm.textContent = 'מסירים...';
+  fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'remove', id: c.item.id, key: key }) })
+    .then(function(r){ return r.json(); })
+    .then(function(r){
+      if (!r || !r.ok) throw r;
+      setKey(c.item.id, null);
+      shared = shared.filter(function(s){ return s.id !== c.item.id; }); listSig = '';
+      backToGallery(); rebuildTiles(); tip('המרחב הוסר מהאולם.', 5000);
+    })
+    .catch(function(){ tip('ההסרה לא הצליחה. נסו שוב בעוד רגע.', 6000); })
+    .then(function(){ rm.disabled = false; removeArmed = false; rm.classList.remove('armed'); rm.textContent = 'הסרת המרחב'; });
 }
 function shrink(c, W){ var o = canvas(W, W/2); o.getContext('2d').drawImage(c, 0, 0, W, W/2); return o; }
 
