@@ -767,7 +767,7 @@ function start(){
   resize(); window.addEventListener('resize', resize);
   bindControls(); bindUI(); connectShared();
   var fontsReady = (document.fonts && document.fonts.load) ? Promise.all([document.fonts.load('800 40px Heebo'), document.fonts.ready]).catch(function(){}) : Promise.resolve();
-  Promise.all([loadImage('entrance.jpg'), loadImage('tile.jpg'), loadImage('tile-plus.jpg'), loadImage('wall.jpg'), loadImage('hall.jpg'), loadImage('room.jpg'), loadImage('tile-back.jpg'), fontsReady]).then(function(r){
+  Promise.all([loadImage('entrance.jpg'), loadImage('tile.jpg'), loadImage('tile-add-new.jpg'), loadImage('wall.jpg'), loadImage('hall.jpg'), loadImage('room.jpg'), loadImage('tile-back.jpg'), fontsReady]).then(function(r){
     IMG.tile = r[1]; IMG.tileAdd = r[2]; IMG.wall = r[3]; IMG.hall = r[4]; IMG.room = r[5]; IMG.tileBack = r[6];
     roomScene = new THREE.Scene(); roomScene.background = new THREE.Color('#060817'); roomMesh = panoMesh(toPanoCanvas(r[5], false)); roomScene.add(roomMesh);
     buildEntry(r[0]); buildGallery(); rebuildTiles();
