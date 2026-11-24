@@ -100,12 +100,9 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
 .clock::before{content:"";position:absolute;inset:-18%;border-radius:50%;background:radial-gradient(circle,rgba(255,214,130,.55) 30%,rgba(255,180,80,.18) 55%,rgba(0,0,0,0) 70%);animation:clockGlow 3.2s ease-in-out infinite}
 .clock img{position:relative;display:block;width:100%;height:100%;clip-path:circle(47.5% at 50% 50%)}
 .clock svg{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 2px 2px rgba(0,0,0,.55))}
-.hand{transform-box:view-box;transform-origin:100px 100px;animation-name:spinBack;animation-timing-function:linear;animation-iteration-count:infinite}
-.hand.minute{animation-duration:2.2s}
-.hand.hour{animation-duration:26.4s}
-@keyframes spinBack{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+.hand{transform-box:view-box;transform-origin:100px 100px;transition:transform .14s cubic-bezier(.3,1.7,.5,1)}
 @keyframes clockGlow{0%,100%{opacity:.55;transform:scale(.96)}50%{opacity:1;transform:scale(1.05)}}
-@media (prefers-reduced-motion:reduce){ .hand.minute{animation-duration:30s} .hand.hour{animation-duration:360s} .clock::before{animation:none} }
+@media (prefers-reduced-motion:reduce){ .hand{transition:none} .clock::before{animation:none} }
 @media (max-width:520px){ .card{padding:22px 18px} .gold,.ghost{min-height:48px;border-width:0 26px;border-image-width:0 26px;font-size:15px;padding:8px 4px 10px} }
 @media (prefers-reduced-motion:reduce){ .pulse{animation:none} }
 @media (max-width:700px){ .tip{bottom:calc(env(safe-area-inset-bottom,0px) + 190px)} }
@@ -182,10 +179,12 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
       </defs>
       <g class="hand hour"><path d="M100 104 L96.5 100 L98 72 L94 64 L100 52 L106 64 L102 72 L103.5 100 Z" fill="url(#handGold)" stroke="#5a3a08" stroke-width=".6"/></g>
       <g class="hand minute"><path d="M100 110 L98 100 L99 46 L96 40 L100 26 L104 40 L101 46 L102 100 Z" fill="url(#handGold)" stroke="#5a3a08" stroke-width=".6"/></g>
+      <g class="hand second"><path d="M99.4 118 L99.4 100 L100 22 L100.6 100 L100.6 118 Z" fill="#8a2a12"/><circle cx="100" cy="112" r="2.4" fill="#8a2a12"/></g>
       <circle cx="100" cy="100" r="5" fill="url(#handGold)" stroke="#5a3a08" stroke-width=".6"/>
     </svg>
   </div>
-  <p>פותחים את שער הזמן...</p>
+  <p id="loaderText">פותחים את שער הזמן...</p>
+  <button class="gold pulse" id="loaderGo" type="button" hidden>כניסה לשער הזמן</button>
 </div>
 <div class="msg" id="nogl" hidden>הדפדפן הזה לא מצליח להציג תלת-ממד.<br>נסו לפתוח את הדף ב-Chrome או ב-Edge במחשב.</div>
 
@@ -423,7 +422,7 @@ function tip(text, ms){ var el = $('tip'); el.textContent = text; el.hidden = fa
 
 /* the ticking of an old clock, made in the browser (no file, no service): starts with the click on the golden door */
 var audioCtx = null, tickTimer = null;
-function tick(high, ctx){
+function tickSound(high, ctx){
   ctx = ctx || audioCtx; if (!ctx) return;
   var audioCtx = ctx;
   var t0 = audioCtx.currentTime, len = Math.floor(audioCtx.sampleRate*.045), buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate), d = buf.getChannelData(0);
@@ -437,12 +436,20 @@ function tick(high, ctx){
   src.connect(bp); bp.connect(g); g.connect(out); body.connect(bg); bg.connect(out); out.connect(audioCtx.destination);
   src.start(t0); body.start(t0); body.stop(t0 + .07);
 }
+var soundOn = false, beat = 0, handAng = { s: 0, m: -60, h: -130 };
+function clockBeat(){
+  beat++;
+  handAng.s -= 6; handAng.m -= .5; handAng.h -= .05;
+  var hs = document.querySelectorAll('.clock .hand');
+  if (hs.length){ hs[0].style.transform = 'rotate(' + handAng.h + 'deg)'; hs[1].style.transform = 'rotate(' + handAng.m + 'deg)'; hs[2].style.transform = 'rotate(' + handAng.s + 'deg)'; }
+  if (soundOn) tickSound(beat % 2 === 0);
+}
+var clockTimer = setInterval(clockBeat, 500);
 function startTicking(){
   try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); } catch(e){ audioCtx = null; return; }
-  var n = 0; stopTicking(); tick(true);
-  tickTimer = setInterval(function(){ n++; tick(n % 2 === 0); }, 480);
+  soundOn = true; tickSound(true);
 }
-function stopTicking(){ if (tickTimer){ clearInterval(tickTimer); tickTimer = null; } }
+function stopTicking(){ soundOn = false; }
 function enterTunnel(){
   if (state !== 'entry') return;
   startTicking();
@@ -862,13 +869,18 @@ function start(){
   resize(); window.addEventListener('resize', resize);
   bindControls(); bindUI(); connectShared();
   var fontsReady = (document.fonts && document.fonts.load) ? Promise.all([document.fonts.load('800 40px Heebo'), document.fonts.ready]).catch(function(){}) : Promise.resolve();
-  var minShow = new Promise(function(ok){ setTimeout(ok, 2200); });
+  var minShow = new Promise(function(ok){ setTimeout(ok, 1500); });
   Promise.all([minShow, loadImage('entrance.jpg'), loadImage('tile.jpg'), loadImage('tile-add-new.jpg'), loadImage('wall.jpg'), loadImage('hall.jpg'), loadImage('room.jpg'), loadImage('tile-back.jpg'), fontsReady]).then(function(r){
     IMG.tile = r[2]; IMG.tileAdd = r[3]; IMG.wall = r[4]; IMG.hall = r[5]; IMG.room = r[6]; IMG.tileBack = r[7];
     roomScene = new THREE.Scene(); roomScene.background = new THREE.Color('#060817'); roomMesh = panoMesh(toPanoCanvas(r[6], false)); roomScene.add(roomMesh);
     buildEntry(r[1]); buildGallery(); rebuildTiles();
     pitch = tPitch = .05; setFov(80); requestAnimationFrame(tick);
-    var l = $('loader'); l.style.opacity = 0; setTimeout(function(){ l.hidden = true; }, 850);
+    $('loaderText').textContent = 'שער הזמן מוכן'; var go = $('loaderGo'); go.hidden = false;
+    try { go.focus({ preventScroll: true }); } catch(e){}
+    go.addEventListener('click', function(){
+      startTicking(); go.disabled = true;
+      var l = $('loader'); l.style.opacity = 0; setTimeout(function(){ l.hidden = true; stopTicking(); }, 1600);
+    });
   }).catch(function(){ $('loader').querySelector('p').textContent = 'לא הצלחנו לטעון את שער הזמן. רעננו את הדף.'; });
 }
 start();
