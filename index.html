@@ -297,14 +297,15 @@ function buildGallery(){
   }
   // the door you came through, closed behind you
   exitDoor = new THREE.Group(); exitDoor.position.set(0, 0, BACK - .05); exitDoor.rotation.y = Math.PI; S.add(exitDoor);
-  var gm = new THREE.MeshStandardMaterial({ color: '#d9a640', metalness: .95, roughness: .3, emissive: '#3a2404', emissiveIntensity: .4 });
-  var leafL = new THREE.Mesh(new THREE.BoxGeometry(.85, 2.9, .08), gm); leafL.position.set(-.43, 1.45, 0);
-  var leafR = leafL.clone(); leafR.position.x = .43;
-  var arch = new THREE.Mesh(new THREE.TorusGeometry(.98, .09, 12, 48, Math.PI), gm); arch.position.set(0, 2.92, 0);
-  var fan = new THREE.Mesh(new THREE.CircleGeometry(.88, 40, 0, Math.PI), new THREE.MeshBasicMaterial({ color: '#ffe3a1' })); fan.position.set(0, 2.92, -.02);
-  var dg = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture('rgba(255,240,200,.9)','rgba(255,190,90,.25)'), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
-  dg.scale.set(4.5, 4.5, 1); dg.position.set(0, 2.2, .3);
-  exitDoor.add(leafL, leafR, arch, fan, dg);
+  var gateTex = new THREE.Texture(IMG.gate); gateTex.needsUpdate = true; gateTex.encoding = THREE.sRGBEncoding;
+  var gate = new THREE.Mesh(new THREE.PlaneGeometry(3.1, 3.1*584/614), new THREE.MeshBasicMaterial({ map: gateTex, transparent: true, toneMapped: false, depthWrite: false }));
+  gate.position.set(0, 1.55, .03);
+  var dg = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture('rgba(255,240,200,.7)','rgba(255,190,90,.18)'), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
+  dg.scale.set(4, 4, 1); dg.position.set(0, 1.6, .3);
+  exitDoor.add(gate, dg);
+  var backTex = wallTex.clone(); backTex.needsUpdate = true; backTex.repeat.set(2, 2);
+  var backWall = new THREE.Mesh(new THREE.CircleGeometry(3.4, 64), new THREE.MeshBasicMaterial({ map: backTex, toneMapped: false, color: '#c9c2b4' }));
+  backWall.position.set(0, 1.6, BACK + .02); backWall.rotation.y = Math.PI; S.add(backWall);
   var exitHit = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 3.8), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
   exitHit.position.set(0, 1.8, .1); exitHit.userData.exit = true; exitDoor.add(exitHit);
 
@@ -645,8 +646,8 @@ function start(){
   resize(); window.addEventListener('resize', resize);
   bindControls(); bindUI(); connectShared();
   var fontsReady = (document.fonts && document.fonts.load) ? Promise.all([document.fonts.load('900 40px "Frank Ruhl Libre"'), document.fonts.ready]).catch(function(){}) : Promise.resolve();
-  Promise.all([loadImage('entrance.jpg'), loadImage('tile.jpg'), loadImage('tile-add.jpg'), loadImage('wall.jpg'), fontsReady]).then(function(r){
-    IMG.tile = r[1]; IMG.tileAdd = r[2]; IMG.wall = r[3];
+  Promise.all([loadImage('entrance.jpg'), loadImage('tile.jpg'), loadImage('tile-add.jpg'), loadImage('wall.jpg'), loadImage('gate-back.png'), fontsReady]).then(function(r){
+    IMG.tile = r[1]; IMG.tileAdd = r[2]; IMG.wall = r[3]; IMG.gate = r[4];
     buildEntry(r[0]); buildGallery(); rebuildTiles();
     pitch = tPitch = .05; setFov(80); requestAnimationFrame(tick);
     var l = $('loader'); l.style.opacity = 0; setTimeout(function(){ l.hidden = true; }, 850);
