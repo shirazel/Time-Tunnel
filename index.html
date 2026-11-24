@@ -77,7 +77,11 @@ button:focus-visible,.drop:focus-visible,summary:focus-visible,input:focus-visib
 .card p{margin:0;font-size:clamp(13px,1.4vw,16px);line-height:1.4;text-align:center}
 label{font-weight:700;font-size:16px;display:grid;gap:6px}
 input[type=text]{font-family:var(--body);font-size:17px;padding:11px 18px;border-radius:999px;border:1px solid rgba(232,185,74,.6);background:rgba(20,14,6,.75);color:var(--ink);box-shadow:inset 0 2px 6px rgba(0,0,0,.6)}
-input[type=text]::placeholder{color:var(--mute)}
+input[type=text]::placeholder,textarea::placeholder{color:var(--mute)}
+textarea{font-family:var(--body);font-size:16px;padding:10px 16px;border-radius:16px;border:1px solid rgba(232,185,74,.6);background:rgba(20,14,6,.75);color:var(--ink);resize:vertical;box-shadow:inset 0 2px 6px rgba(0,0,0,.6)}
+.promptCard{z-index:5}
+#copyPrompt{align-self:center;min-width:200px}
+.pfFallback{direction:ltr;font-size:12px;min-height:90px}
 .drop{border:1px dashed rgba(232,185,74,.6);border-radius:14px;padding:clamp(8px,1.6vh,16px) 12px;text-align:center;display:grid;gap:12px;justify-items:center;cursor:pointer;transition:background .2s}
 .drop.over{background:rgba(232,185,74,.14);border-color:var(--gold-hi)}
 .small{font-size:14px;color:var(--mute);line-height:1.5}
@@ -160,13 +164,25 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
     <p class="saveNote" id="saveNote"></p>
     <p class="err" id="err" hidden></p>
     <input type="file" id="file" accept="image/*" hidden>
-    <details>
-      <summary>עוד אין לכם תמונה? הפרומפט ליצירה</summary>
-      <p class="howto">העתיקו את הפרומפט ל-ChatGPT או ל-Gemini, והחליפו את מה שבסוגריים המרובעים במקום ובזמן שלכם (אפשר בעברית). אם יש אפשרות לבחור יחס תמונה, בחרו את הרחב ביותר. שמרו את התמונה שנוצרה והעלו אותה לכאן.</p>
-      <pre class="prompt" id="promptText">A 360-degree equirectangular panorama photo sphere, exactly 2:1 aspect ratio, like a VR or Google Street View photosphere. The scene wraps completely around the viewer: what is behind me continues seamlessly from the right edge to the left edge. The horizon is a straight line exactly at the vertical middle of the image; the ground curves and stretches across the bottom and the sky stretches across the top, as in a spherical projection. I have just stepped through a glowing golden time-travel door, and now I am standing in: [לאן ולאיזו תקופה, למשל: מחנה המכבים בהרי יהודה, ערב הקרב ביוונים]. All around me, in every direction: [מה רואים מסביב: אנשים, חפצים, בניינים, נוף]. Time of day and atmosphere: [למשל: שקיעה, ערב חורף, אור של מנורות שמן]. Behind me, the golden door I came through is still glowing. Viewpoint at human eye level in the middle of a wide open space. Shot like a film still: real textures, natural practical light, subtle film grain. No text, no frame, no borders, not a flat photo.</pre>
-      <div class="row"><button class="ghost" id="copy" type="button">העתקת הפרומפט</button></div>
-    </details>
+    <button class="ghost" id="openPromptForm" type="button">עוד אין לכם תמונה? יוצרים פרומפט</button>
   </div>
+  <div class="card promptCard" id="promptCard" role="dialog" aria-labelledby="pfTitle" hidden>
+  <button class="noteClose" id="promptClose" type="button">חזרה</button>
+  <h2 id="pfTitle">פרומפט לתמונת 360</h2>
+  <p>מלאו, העתיקו, והדביקו ב-ChatGPT או ב-Gemini.</p>
+  <label for="pfPlace">לאן ולאיזו תקופה?
+    <input type="text" id="pfPlace" maxlength="120" placeholder="למשל: מחנה המכבים בהרי יהודה, ערב הקרב ביוונים">
+  </label>
+  <label for="pfAround">מה רואים מסביב?
+    <textarea id="pfAround" rows="3" maxlength="400" placeholder="למשל: לוחמים מכינים חרבות, אוהלים ועצי זית, ומעבר לעמק מחנה היוונים עם פילים"></textarea>
+  </label>
+  <label for="pfMood">שעה ואווירה (לא חובה)
+    <input type="text" id="pfMood" maxlength="120" placeholder="למשל: שקיעה, עשן מהמדורות, מתח לפני הקרב">
+  </label>
+  <button class="gold" id="copyPrompt" type="button">העתקת הפרומפט</button>
+  <p class="saveNote" id="pfStatus" role="status"></p>
+  <textarea id="pfFallback" class="pfFallback" readonly hidden aria-label="הפרומפט להעתקה"></textarea>
+</div>
 </div>
 <button class="gold altar" id="altarBtn" type="button" hidden>הכניסו מרחב</button>
 <div class="bottom" id="gateBar" hidden>
@@ -787,10 +803,19 @@ function bindUI(){
     if (state !== 'gate') return; var items = (e.clipboardData && e.clipboardData.items) || [];
     for (var i = 0; i < items.length; i++) if (items[i].type.indexOf('image') === 0){ e.preventDefault(); takeFile(items[i].getAsFile()); return; }
   });
-  $('copy').addEventListener('click', function(){
-    var btn = this, text = $('promptText').textContent;
-    var done = function(){ btn.textContent = 'הועתק'; setTimeout(function(){ btn.textContent = 'העתקת הפרומפט'; }, 1800); };
-    var fallback = function(){ var r = document.createRange(); r.selectNodeContents($('promptText')); var s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = 'סמנו והעתיקו עם Ctrl+C'; };
+  var PROMPT_TEMPLATE = 'A 360-degree equirectangular panorama photo sphere, exactly 2:1 aspect ratio, like a VR or Google Street View photosphere. The scene wraps completely around the viewer: what is behind me continues seamlessly from the right edge to the left edge. The horizon is a straight line exactly at the vertical middle of the image; the ground curves and stretches across the bottom and the sky stretches across the top, as in a spherical projection. I have just stepped through a glowing golden time-travel door, and now I am standing in: [לאן ולאיזו תקופה, למשל: מחנה המכבים בהרי יהודה, ערב הקרב ביוונים]. All around me, in every direction: [מה רואים מסביב: אנשים, חפצים, בניינים, נוף]. Time of day and atmosphere: [למשל: שקיעה, ערב חורף, אור של מנורות שמן]. Behind me, the golden door I came through is still glowing. Viewpoint at human eye level in the middle of a wide open space. Shot like a film still: real textures, natural practical light, subtle film grain. No text, no frame, no borders, not a flat photo.';
+  function buildPrompt(){
+    var place = $('pfPlace').value.trim(), around = $('pfAround').value.trim(), mood = $('pfMood').value.trim();
+    var parts = PROMPT_TEMPLATE.split(/\[[^\]]*\]/);
+    return parts[0] + place + parts[1] + (around || 'people, objects and buildings that fit the place and the period') + parts[2] + (mood || 'warm natural light') + (parts.slice(3).join(''));
+  }
+  $('openPromptForm').addEventListener('click', function(){ $('note').hidden = true; $('promptCard').hidden = false; $('pfStatus').textContent = ''; $('pfFallback').hidden = true; setTimeout(function(){ try { $('pfPlace').focus(); } catch(e){} }, 60); });
+  $('promptClose').addEventListener('click', function(){ $('promptCard').hidden = true; $('note').hidden = false; });
+  $('copyPrompt').addEventListener('click', function(){
+    if (!$('pfPlace').value.trim()){ $('pfStatus').textContent = 'כתבו לאן ולאיזו תקופה.'; try { $('pfPlace').focus(); } catch(e){} return; }
+    var text = buildPrompt(), st = $('pfStatus');
+    var done = function(){ st.textContent = 'הפרומפט הועתק! הדביקו אותו ב-ChatGPT או ב-Gemini, ובחרו את יחס התמונה הרחב ביותר.'; $('pfFallback').hidden = true; };
+    var fallback = function(){ var fb = $('pfFallback'); fb.value = text; fb.hidden = false; fb.focus(); fb.select(); st.textContent = 'ההעתקה האוטומטית לא עבדה. הטקסט מסומן: לחצו Ctrl+C.'; };
     try { navigator.clipboard.writeText(text).then(done, fallback); } catch(e){ fallback(); }
   });
 }
@@ -818,7 +843,7 @@ function renderRoom(t){
 }
 var noteOpen = false;
 function openNote(){ noteOpen = true; $('note').hidden = false; $('altarBtn').hidden = true; $('err').hidden = true; setTimeout(function(){ try { $('spaceTitle').focus({ preventScroll: true }); } catch(e){} }, 60); }
-function closeNote(){ noteOpen = false; $('note').hidden = true; }
+function closeNote(){ noteOpen = false; $('note').hidden = true; $('promptCard').hidden = true; }
 /* inner opening of the painted frame in room.jpg, as fractions of the image */
 var FRAME = { u0: 772/1774, u1: 1003/1774, v0: 300/887, v1: 540/887 };
 var noteV = new THREE.Vector3();
