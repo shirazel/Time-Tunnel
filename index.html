@@ -416,16 +416,17 @@ function tip(text, ms){ var el = $('tip'); el.textContent = text; el.hidden = fa
 
 /* the ticking of an old clock, made in the browser (no file, no service): starts with the click on the golden door */
 var audioCtx = null, tickTimer = null;
-function tick(high){
-  if (!audioCtx) return;
+function tick(high, ctx){
+  ctx = ctx || audioCtx; if (!ctx) return;
+  var audioCtx = ctx;
   var t0 = audioCtx.currentTime, len = Math.floor(audioCtx.sampleRate*.045), buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate), d = buf.getChannelData(0);
   for (var i = 0; i < len; i++) d[i] = (Math.random()*2 - 1)*Math.pow(1 - i/len, 6);
   var src = audioCtx.createBufferSource(); src.buffer = buf;
-  var bp = audioCtx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = high ? 3200 : 2300; bp.Q.value = 6;
+  var bp = audioCtx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = high ? 3000 : 2100; bp.Q.value = 1.8;
   var body = audioCtx.createOscillator(); body.type = 'sine'; body.frequency.value = high ? 1650 : 1250;
   var g = audioCtx.createGain(), bg = audioCtx.createGain();
-  g.gain.value = .9; bg.gain.setValueAtTime(.18, t0); bg.gain.exponentialRampToValueAtTime(.0001, t0 + .06);
-  var out = audioCtx.createGain(); out.gain.value = .35;
+  g.gain.value = 2.2; bg.gain.setValueAtTime(.45, t0); bg.gain.exponentialRampToValueAtTime(.0001, t0 + .06);
+  var out = audioCtx.createGain(); out.gain.value = .9;
   src.connect(bp); bp.connect(g); g.connect(out); body.connect(bg); bg.connect(out); out.connect(audioCtx.destination);
   src.start(t0); body.start(t0); body.stop(t0 + .07);
 }
