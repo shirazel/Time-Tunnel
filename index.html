@@ -6,14 +6,14 @@
 <title>מנהרת הזמן</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;900&family=Assistant:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Suez+One&family=David+Libre:wght@400;500;700&display=swap">
 <style>
 /* Layout: one full-screen WebGL stage in three acts (entrance hall, tunnel of golden tiles, a time space). Gilded type, one action row at the bottom, a glass card for adding a space. Single dark world by choice. */
 :root{
   --night:#060817; --gold:#e8b94a; --gold-hi:#ffe3a1; --gold-lo:#9a6a1a;
   --ink:#f7efdc; --mute:#b9b2d6; --glass:rgba(12,14,38,.8); --line:rgba(232,185,74,.45);
-  --display:'Frank Ruhl Libre','David','Times New Roman',serif;
-  --body:'Assistant','Segoe UI',Arial,sans-serif;
+  --display:'Suez One','David','Times New Roman',serif;
+  --body:'David Libre','David','Times New Roman',serif;
   --mono:ui-monospace,Consolas,'Courier New',monospace;
   color-scheme:dark;
 }
@@ -26,20 +26,21 @@ body{direction:rtl}
 .top{position:fixed;top:0;left:0;right:0;text-align:center;pointer-events:none;
   padding:calc(env(safe-area-inset-top,0px) + 20px) max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px));
   transition:opacity .8s}
-h1{font-family:var(--display);font-weight:900;font-size:clamp(34px,6vw,64px);line-height:1;margin:0;color:var(--gold-hi);
-  text-shadow:0 0 28px rgba(232,185,74,.6),0 2px 0 var(--gold-lo),0 0 3px rgba(0,0,0,.8);text-wrap:balance}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(38px,6.5vw,72px);line-height:1.05;margin:0;letter-spacing:.01em;text-wrap:balance;
+  background:linear-gradient(180deg,#fff6d6 0%,#f0c868 45%,#b9821f 70%,#f3d27c 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 2px 0 #4a2f06) drop-shadow(0 0 20px rgba(232,185,74,.45)) drop-shadow(0 0 4px rgba(0,0,0,.9))}
 .sub{margin:.5em auto 0;max-width:34em;font-size:clamp(15px,2vw,19px);line-height:1.45;color:var(--ink);text-shadow:0 1px 6px rgba(0,0,0,.9);text-wrap:balance}
-.spaceTitle{font-family:var(--display);font-weight:900;font-size:clamp(22px,3.4vw,36px);color:var(--gold-hi);text-shadow:0 0 18px rgba(232,185,74,.5),0 1px 6px rgba(0,0,0,.9);margin:0}
+.spaceTitle{font-family:var(--display);font-weight:400;font-size:clamp(22px,3.4vw,36px);color:var(--gold-hi);text-shadow:0 0 18px rgba(232,185,74,.5),0 1px 6px rgba(0,0,0,.9);margin:0}
 .bottom{position:fixed;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;
   padding:0 max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 22px) max(16px,env(safe-area-inset-left,0px));
   pointer-events:none}
 .bottom > *{pointer-events:auto}
 button{font-family:var(--body);font-size:17px;cursor:pointer}
 .gold,.ghost{appearance:none;background:none;border-style:solid;border-color:transparent;border-width:0 32px;border-radius:0;
-  min-height:56px;box-sizing:border-box;padding:10px 8px 12px;font-family:var(--display);font-weight:900;font-size:18px;line-height:1.2;
+  min-height:56px;box-sizing:border-box;padding:10px 8px 12px;font-family:var(--display);font-weight:400;font-size:18px;line-height:1.2;
   transition:filter .2s, transform .2s}
 .gold{border-image:url(btn-gold.png) 0 150 fill / 0 32px / 0 stretch;color:#3a2200;text-shadow:0 1px 0 rgba(255,244,214,.7)}
-.ghost{border-image:url(btn-bronze.png) 0 150 fill / 0 32px / 0 stretch;color:var(--gold-hi);text-shadow:0 1px 3px rgba(0,0,0,.9)}
+.ghost{border-image:url(btn-bronze.png) 0 130 fill / 0 32px / 0 stretch;color:var(--gold-hi);text-shadow:0 1px 3px rgba(0,0,0,.9)}
 .gold:hover,.ghost:hover{filter:brightness(1.15);transform:translateY(-1px)}
 .gold:disabled,.ghost:disabled{filter:grayscale(.6) brightness(.75);cursor:default;transform:none}
 .ghost[aria-pressed="true"]{filter:brightness(1.25) saturate(1.2)}
@@ -52,12 +53,12 @@ button:focus-visible,.drop:focus-visible,summary:focus-visible,input:focus-visib
 .flash{position:fixed;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 50%,#fffaf0 0,#ffe3a1 35%,#e8b94a 70%,#7a4f10 100%)}
 .panel{position:fixed;inset:0;overflow:auto;display:grid;place-items:center;
   padding:calc(env(safe-area-inset-top,0px) + 24px) max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 24px) max(16px,env(safe-area-inset-left,0px));
-  background:radial-gradient(ellipse at 50% 45%,rgba(6,8,23,.25),rgba(6,8,23,.78) 75%);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);animation:panelIn .7s ease both}
+  background:radial-gradient(ellipse at 50% 50%,rgba(6,8,23,0) 35%,rgba(6,8,23,.6) 95%);animation:panelIn .7s ease both}
 @keyframes panelIn{from{opacity:0}to{opacity:1}}
 .card{width:min(580px,100%);box-sizing:border-box;border:2px solid #b8862f;border-radius:26px;padding:30px 28px;display:grid;gap:16px;
-  background:linear-gradient(180deg,rgba(16,11,4,.84),rgba(8,6,3,.92)),url(wall.jpg) center/520px;
+  background:linear-gradient(180deg,rgba(16,11,4,.8),rgba(8,6,3,.88)),url(wall.jpg) center/520px;
   box-shadow:inset 0 0 0 5px rgba(0,0,0,.35),inset 0 0 0 6px rgba(240,200,110,.5),inset 0 0 50px rgba(0,0,0,.6),0 30px 90px rgba(0,0,0,.7)}
-.card h2{font-family:var(--display);font-weight:900;font-size:clamp(26px,4vw,36px);line-height:1.1;margin:0;color:var(--gold-hi);text-wrap:balance;text-shadow:0 0 18px rgba(232,185,74,.45),0 2px 0 var(--gold-lo)}
+.card h2{font-family:var(--display);font-weight:400;font-size:clamp(26px,4vw,36px);line-height:1.1;margin:0;color:var(--gold-hi);text-wrap:balance;text-shadow:0 0 18px rgba(232,185,74,.45),0 2px 0 var(--gold-lo)}
 .card p{margin:0;font-size:17px;line-height:1.55}
 label{font-weight:700;font-size:16px;display:grid;gap:6px}
 input[type=text]{font-family:var(--body);font-size:17px;padding:11px 18px;border-radius:999px;border:1px solid rgba(232,185,74,.6);background:rgba(20,14,6,.75);color:var(--ink);box-shadow:inset 0 2px 6px rgba(0,0,0,.6)}
@@ -150,7 +151,7 @@ var TAU = Math.PI*2;
 /* state: entry | toGallery | gallery | toSpace | gate | space */
 var state = 'entry';
 var renderer, camera, gcam, clock, raycaster, pointer;
-var entryScene, galleryScene, spaceScene, entryMesh = null, spaceMesh = null;
+var entryScene, galleryScene, spaceScene, roomScene, roomMesh, entryMesh = null, spaceMesh = null;
 var yaw = 0, pitch = 0, tYaw = 0, tPitch = 0, fov = 72, autoSpin = false;
 var camZ = 1.2, tCamZ = 1.2, anim = null;
 var wallTex, sparks, exitDoor;
@@ -203,7 +204,7 @@ function makeGoldBase(){
   goldBase = c;
 }
 function engraveText(x, text, cx, cy, size, maxW){
-  x.font = '900 ' + size + 'px "Frank Ruhl Libre", David, serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.direction = 'rtl';
+  x.font = size + 'px "Suez One", David, serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.direction = 'rtl';
   var words = String(text).split(/\s+/), lines = [], line = '';
   words.forEach(function(w){ var test = line ? line + ' ' + w : w; if (x.measureText(test).width > maxW && line){ lines.push(line); line = w; } else line = test; });
   if (line) lines.push(line); lines = lines.slice(0, 2);
@@ -225,7 +226,7 @@ function tileTexture(kind, title){
     x.lineTo(px + w, py + h - 20); x.quadraticCurveTo(px + w, py + h, px + w - 20, py + h); x.lineTo(px + 20, py + h);
     x.quadraticCurveTo(px, py + h, px, py + h - 20); x.lineTo(px, py + 20); x.quadraticCurveTo(px, py, px + 20, py); x.fill(); x.restore();
     x.strokeStyle = 'rgba(240,200,110,.85)'; x.lineWidth = 4; x.strokeRect(px + 10, py + 10, w - 20, h - 20);
-    x.font = '900 52px "Frank Ruhl Libre", David, serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.direction = 'rtl';
+    x.font = '52px "Suez One", David, serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.direction = 'rtl';
     var t = label; while (x.measureText(t).width > w - 60 && t.length > 4) t = t.slice(0, -2);
     if (t !== label) t = t.replace(/\s+$/, '') + '...';
     var tg = x.createLinearGradient(0, py + 20, 0, py + h - 20); tg.addColorStop(0,'#fff0c2'); tg.addColorStop(1,'#d9a640');
@@ -288,8 +289,6 @@ function buildGallery(){
   wall.rotation.x = Math.PI/2; wall.position.set(0, 1.6, BACK - LEN/2); S.add(wall);
   var floor = new THREE.Mesh(new THREE.PlaneGeometry(6.2, LEN), floorMat());
   floor.rotation.x = -Math.PI/2; floor.position.set(0, 0, BACK - LEN/2); S.add(floor);
-  var lineMat = new THREE.MeshStandardMaterial({ color: '#e0b04a', metalness: 1, roughness: .25, emissive: '#5a3a08', emissiveIntensity: .6 });
-  [-.85, .85].forEach(function(x){ var ln = new THREE.Mesh(new THREE.PlaneGeometry(.045, LEN), lineMat); ln.rotation.x = -Math.PI/2; ln.position.set(x, .006, BACK - LEN/2); S.add(ln); });
   // the door you came through, closed behind you
   exitDoor = new THREE.Group(); exitDoor.position.set(0, 0, BACK - .05); exitDoor.rotation.y = Math.PI; S.add(exitDoor);
   var gateTex = new THREE.Texture(IMG.gate); gateTex.needsUpdate = true; gateTex.encoding = THREE.sRGBEncoding;
@@ -317,7 +316,10 @@ function makeTile(kind, item){
     tileGeo = new THREE.BoxGeometry(TILE, TILE, .06);
     tileGold = new THREE.MeshStandardMaterial({ color: '#d7a543', metalness: .95, roughness: .32 });
     tileBack = new THREE.MeshStandardMaterial({ color: '#1b1207', metalness: .5, roughness: .6 });
-    tileLight = new THREE.MeshBasicMaterial({ color: '#fff2cc' });
+    var lc = canvas(256,256), lx = lc.getContext('2d'), lg = lx.createRadialGradient(128,128,0,128,128,180);
+    lg.addColorStop(0,'#fff8e2'); lg.addColorStop(.45,'#f2c35c'); lg.addColorStop(1,'#5a3308'); lx.fillStyle = lg; lx.fillRect(0,0,256,256);
+    var lt = new THREE.CanvasTexture(lc); lt.encoding = THREE.sRGBEncoding;
+    tileLight = new THREE.MeshBasicMaterial({ map: lt, toneMapped: false });
     ringGeo = new THREE.TorusGeometry(.12, .018, 12, 40); bossGeo = new THREE.SphereGeometry(.035, 16, 12);
   }
   var g = new THREE.Group();
@@ -325,7 +327,7 @@ function makeTile(kind, item){
   var glowPlane = new THREE.Mesh(new THREE.PlaneGeometry(TILE*.96, TILE*.96), tileLight); glowPlane.position.z = -.035; glowPlane.visible = false; g.add(glowPlane);
   var pivot = new THREE.Group(); pivot.position.x = -TILE/2; g.add(pivot);
   var face = new THREE.MeshStandardMaterial({ map: tileTexture(kind, item ? item.title : ''), metalness: .45, roughness: .45, emissive: '#6a460e', emissiveIntensity: .3 });
-  var panel = new THREE.Mesh(tileGeo, [tileGold, tileGold, tileGold, tileGold, face, tileGold]); panel.position.x = TILE/2; pivot.add(panel);
+  var panel = new THREE.Mesh(tileGeo, [tileGold, tileGold, tileGold, tileGold, face, face]); panel.position.x = TILE/2; pivot.add(panel);
   var hinge = null;
   if (false){
     var boss = new THREE.Mesh(bossGeo, tileGold); boss.position.set(TILE/2, TILE*.15, .05); pivot.add(boss);
@@ -424,7 +426,10 @@ function runAnim(dt){
     u.open = ease((k - .25)/.45); u.pivot.rotation.y = -1.55*u.open; u.glow.visible = u.open > 0;
     yaw = tYaw = a.yaw0 + (a.yaw1 - a.yaw0)*ease(k*1.6); pitch = tPitch = a.pitch0 + (a.pitch1 - a.pitch0)*ease(k*1.6);
     var m = ease((k - .35)/.65); camera.position.lerpVectors(a.from, a.to, m); camZ = camera.position.z;
-    if (k >= 1){ anim = null; if (u.kind === 'plus') showGate(); else openSpace(u.item, u.kind === 'shared'); }
+    if (k >= 1){ anim = null;
+      if (u.kind !== 'plus') openSpace(u.item, u.kind === 'shared');
+      else if (reduce) showGate();
+      else { state = 'reveal'; anim = { t: 0, dur: 1.2, mix: 0, base: 'gallery', overScene: roomScene, overMesh: roomMesh, done: showGate }; } }
   }
 }
 function closeOpenTile(){
@@ -449,7 +454,7 @@ function openSpace(item, isShared){
     if (spaceMesh){ spaceScene.remove(spaceMesh); disposeMesh(spaceMesh); }
     spaceMesh = panoMesh(c); spaceScene.add(spaceMesh);
     $('panel').hidden = true; $('tip').hidden = true;
-    if (!reduce && (state === 'toSpace' || state === 'gate')){ state = 'reveal'; anim = { t: 0, dur: 1.1, mix: 0, done: finish }; return; }
+    if (!reduce && (state === 'toSpace' || state === 'gate')){ anim = { t: 0, dur: 1.1, mix: 0, base: state === 'gate' ? 'room' : 'gallery', overScene: spaceScene, overMesh: spaceMesh, done: finish }; state = 'reveal'; return; }
     finish();
   };
   var finish = function(){
@@ -469,6 +474,7 @@ function setSpin(on){ autoSpin = on; $('spin').setAttribute('aria-pressed', on ?
 
 /* ================= adding a space ================= */
 function showGate(){
+  var rm = roomMesh.material; rm.opacity = 1; rm.transparent = false;
   state = 'gate'; $('panel').hidden = false; showOnly(null); $('err').hidden = true; $('busy').hidden = true; $('spaceTop').hidden = true;
   $('saveNote').textContent = canShare ? 'המרחב יישמר במנהרה לכל מי שנכנס לקישור.' : 'המרחב יישמר רק במחשב שלכם, עד שתסגרו את הדף.';
   flashTo(0, 900); setTimeout(function(){ try { $('spaceTitle').focus({ preventScroll: true }); } catch(e){} }, 60);
@@ -628,6 +634,11 @@ function animateGallery(dt, t){
   });
   var f = galleryScene.getObjectByName('follow'); f.position.set(0, 2.3, camera.position.z - 1.2);
 }
+function roomYaw(t){ return reduce ? 0 : .07*Math.sin(t*.12); }
+function renderRoom(t){
+  gcam.aspect = camera.aspect; gcam.fov = 72; gcam.updateProjectionMatrix(); gcam.position.set(0, 1.6, 0); gcam.rotation.set(-.02, roomYaw(t), 0);
+  renderer.render(roomScene, gcam);
+}
 function tick(){
   requestAnimationFrame(tick);
   var dt = Math.min(clock.getDelta(), .05), t = clock.elapsedTime;
@@ -650,15 +661,16 @@ function tick(){
   else if (state === 'entry' || state === 'toGallery'){ camera.position.set(0, 1.6, 0); renderer.render(entryScene, camera); }
   else if (state === 'gallery' || state === 'toSpace'){ animateGallery(dt, t); renderer.render(galleryScene, camera); }
   else if (state === 'reveal' && anim){
-    // the time space dissolves in over the open tile
-    animateGallery(dt, t); renderer.render(galleryScene, camera);
-    var sm = spaceMesh.material; sm.transparent = true; sm.opacity = anim.mix;
-    var sb = spaceScene.background; spaceScene.background = null;
-    gcam.aspect = camera.aspect; gcam.fov = 72; gcam.updateProjectionMatrix(); gcam.position.set(0, 1.6, 0); gcam.rotation.set(0, 0, 0);
-    renderer.autoClear = false; renderer.clearDepth(); renderer.render(spaceScene, gcam); renderer.autoClear = true;
-    spaceScene.background = sb;
+    // the next place dissolves in over the open tile
+    if (anim.base === 'room') renderRoom(t); else { animateGallery(dt, t); renderer.render(galleryScene, camera); }
+    var om = anim.overMesh.material; om.transparent = true; om.opacity = anim.mix;
+    var sb = anim.overScene.background; anim.overScene.background = null;
+    gcam.aspect = camera.aspect; gcam.fov = 72; gcam.updateProjectionMatrix(); gcam.position.set(0, 1.6, 0);
+    gcam.rotation.set(0, anim.overScene === roomScene ? roomYaw(t) : 0, 0);
+    renderer.autoClear = false; renderer.clearDepth(); renderer.render(anim.overScene, gcam); renderer.autoClear = true;
+    anim.overScene.background = sb;
   }
-  else if (state === 'gate'){ animateGallery(dt, t); renderer.render(galleryScene, camera); }
+  else if (state === 'gate') renderRoom(t);
   else renderer.render(spaceScene, camera);
 }
 
@@ -674,9 +686,10 @@ function start(){
   spaceScene = new THREE.Scene(); spaceScene.background = new THREE.Color('#060817');
   resize(); window.addEventListener('resize', resize);
   bindControls(); bindUI(); connectShared();
-  var fontsReady = (document.fonts && document.fonts.load) ? Promise.all([document.fonts.load('900 40px "Frank Ruhl Libre"'), document.fonts.ready]).catch(function(){}) : Promise.resolve();
-  Promise.all([loadImage('entrance.jpg'), loadImage('tile.jpg'), loadImage('tile-add.jpg'), loadImage('wall.jpg'), loadImage('gate-back.png'), fontsReady]).then(function(r){
+  var fontsReady = (document.fonts && document.fonts.load) ? Promise.all([document.fonts.load('40px "Suez One"'), document.fonts.ready]).catch(function(){}) : Promise.resolve();
+  Promise.all([loadImage('entrance.jpg'), loadImage('tile.jpg'), loadImage('tile-add.jpg'), loadImage('wall.jpg'), loadImage('gate-back.png'), loadImage('room.jpg'), fontsReady]).then(function(r){
     IMG.tile = r[1]; IMG.tileAdd = r[2]; IMG.wall = r[3]; IMG.gate = r[4];
+    roomScene = new THREE.Scene(); roomScene.background = new THREE.Color('#060817'); roomMesh = panoMesh(toPanoCanvas(r[5], false)); roomScene.add(roomMesh);
     buildEntry(r[0]); buildGallery(); rebuildTiles();
     pitch = tPitch = .05; setFov(80); requestAnimationFrame(tick);
     var l = $('loader'); l.style.opacity = 0; setTimeout(function(){ l.hidden = true; }, 850);
