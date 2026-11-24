@@ -414,13 +414,36 @@ function showOnly(bar){ ['entryBar','galleryBar','spaceBar','gateBar'].forEach(f
 function tip(text, ms){ var el = $('tip'); el.textContent = text; el.hidden = false; el.style.opacity = 1; clearTimeout(tipTimer);
   tipTimer = setTimeout(function(){ el.style.opacity = 0; }, ms || 5500); }
 
+/* the ticking of an old clock, made in the browser (no file, no service): starts with the click on the golden door */
+var audioCtx = null, tickTimer = null;
+function tick(high){
+  if (!audioCtx) return;
+  var t0 = audioCtx.currentTime, len = Math.floor(audioCtx.sampleRate*.045), buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate), d = buf.getChannelData(0);
+  for (var i = 0; i < len; i++) d[i] = (Math.random()*2 - 1)*Math.pow(1 - i/len, 6);
+  var src = audioCtx.createBufferSource(); src.buffer = buf;
+  var bp = audioCtx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = high ? 3200 : 2300; bp.Q.value = 6;
+  var body = audioCtx.createOscillator(); body.type = 'sine'; body.frequency.value = high ? 1650 : 1250;
+  var g = audioCtx.createGain(), bg = audioCtx.createGain();
+  g.gain.value = .9; bg.gain.setValueAtTime(.18, t0); bg.gain.exponentialRampToValueAtTime(.0001, t0 + .06);
+  var out = audioCtx.createGain(); out.gain.value = .35;
+  src.connect(bp); bp.connect(g); g.connect(out); body.connect(bg); bg.connect(out); out.connect(audioCtx.destination);
+  src.start(t0); body.start(t0); body.stop(t0 + .07);
+}
+function startTicking(){
+  try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); } catch(e){ audioCtx = null; return; }
+  var n = 0; stopTicking(); tick(true);
+  tickTimer = setInterval(function(){ n++; tick(n % 2 === 0); }, 480);
+}
+function stopTicking(){ if (tickTimer){ clearInterval(tickTimer); tickTimer = null; } }
 function enterTunnel(){
   if (state !== 'entry') return;
+  startTicking();
   state = 'toGallery'; showOnly(null); $('top').style.opacity = 0; $('gl').classList.remove('hover');
   anim = { t: 0, dur: reduce ? .01 : 3.4, mix: 0, efov: fov, yaw0: wrapAngle(yaw), pitch0: pitch, fov0: fov };
 }
 function resetEntryMesh(){ var em = entryMesh.material; em.opacity = 1; em.transparent = false; entryMesh.position.z = 0; }
 function arriveGallery(){
+  stopTicking();
   resetEntryMesh();
   state = 'gallery'; camZ = tCamZ = 0; yaw = tYaw = 0; pitch = tPitch = 0; setFov(72);
   $('top').style.opacity = 0; showOnly('galleryBar'); flashTo(0, 1000);
