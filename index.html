@@ -52,7 +52,7 @@ button:focus-visible,.drop:focus-visible,summary:focus-visible,input:focus-visib
 @keyframes pulse{50%{filter:drop-shadow(0 0 14px rgba(255,214,120,.85)) brightness(1.08)}}
 .tip{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 92px);left:50%;transform:translateX(-50%);font-size:15px;color:var(--ink);
   background:rgba(8,10,30,.66);border:1px solid rgba(185,178,214,.25);border-radius:999px;padding:7px 16px;max-width:calc(100% - 32px);box-sizing:border-box;text-align:center;transition:opacity 1s;pointer-events:none;z-index:5}
-.flash{position:fixed;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 50%,#fffaf0 0,#ffe3a1 35%,#e8b94a 70%,#7a4f10 100%)}
+.flash{position:fixed;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 50%,#ffffff 0,#fff6dc 30%,#ffd98a 65%,#d9a040 100%)}
 .panel{position:fixed;inset:0;pointer-events:none;animation:panelIn .9s ease .15s both}
 .panel .card{pointer-events:auto}
 @keyframes panelIn{from{opacity:0}to{opacity:1}}
@@ -85,7 +85,19 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
   background:rgba(0,0,0,.4);border:1px solid rgba(232,185,74,.2);border-radius:12px;padding:14px;margin:0 0 10px;max-height:200px;overflow:auto;color:var(--ink)}
 .row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
 .msg{position:fixed;inset:0;display:grid;place-items:center;text-align:center;padding:24px;font-size:18px;line-height:1.6}
-.loader{position:fixed;inset:0;display:grid;place-items:center;font-family:var(--display);font-size:22px;color:var(--gold-hi);background:var(--night);transition:opacity .8s}
+.loader{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;font-family:var(--display);font-weight:700;font-size:22px;color:var(--gold-hi);background:var(--night);transition:opacity .9s;
+  padding:0 max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
+.loader p{margin:0;text-shadow:0 0 14px rgba(232,185,74,.5)}
+.clock{position:relative;width:min(56vmin,360px);aspect-ratio:1}
+.clock::before{content:"";position:absolute;inset:-18%;border-radius:50%;background:radial-gradient(circle,rgba(255,214,130,.55) 30%,rgba(255,180,80,.18) 55%,rgba(0,0,0,0) 70%);animation:clockGlow 3.2s ease-in-out infinite}
+.clock img{position:relative;display:block;width:100%;height:100%;border-radius:50%}
+.clock svg{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 2px 2px rgba(0,0,0,.55))}
+.hand{transform-box:view-box;transform-origin:100px 100px;animation:backwards linear infinite}
+.hand.minute{animation-duration:2.2s}
+.hand.hour{animation-duration:26.4s}
+@keyframes backwards{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+@keyframes clockGlow{0%,100%{opacity:.55;transform:scale(.96)}50%{opacity:1;transform:scale(1.05)}}
+@media (prefers-reduced-motion:reduce){ .hand.minute{animation-duration:30s} .hand.hour{animation-duration:360s} .clock::before{animation:none} }
 @media (max-width:520px){ .card{padding:22px 18px} .gold,.ghost{min-height:48px;border-width:0 26px;border-image-width:0 26px;font-size:15px;padding:8px 4px 10px} }
 @media (prefers-reduced-motion:reduce){ .pulse{animation:none} }
 </style>
@@ -149,7 +161,20 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
   <button class="gold" id="toFrame" type="button" hidden>חזרה למזבח</button>
 </div>
 
-<div class="loader" id="loader">פותחים את שער הזמן...</div>
+<div class="loader" id="loader">
+  <div class="clock" aria-hidden="true">
+    <img src="clock.jpg" alt="">
+    <svg viewBox="0 0 200 200">
+      <defs>
+        <linearGradient id="handGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff3c4"/><stop offset=".5" stop-color="#d9a640"/><stop offset="1" stop-color="#8a5a12"/></linearGradient>
+      </defs>
+      <g class="hand hour"><path d="M100 104 L96.5 100 L98 72 L94 64 L100 52 L106 64 L102 72 L103.5 100 Z" fill="url(#handGold)" stroke="#5a3a08" stroke-width=".6"/></g>
+      <g class="hand minute"><path d="M100 110 L98 100 L99 46 L96 40 L100 26 L104 40 L101 46 L102 100 Z" fill="url(#handGold)" stroke="#5a3a08" stroke-width=".6"/></g>
+      <circle cx="100" cy="100" r="5" fill="url(#handGold)" stroke="#5a3a08" stroke-width=".6"/>
+    </svg>
+  </div>
+  <p>פותחים את שער הזמן...</p>
+</div>
 <div class="msg" id="nogl" hidden>הדפדפן הזה לא מצליח להציג תלת-ממד.<br>נסו לפתוח את הדף ב-Chrome או ב-Edge במחשב.</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -421,7 +446,7 @@ function setTileWindow(t){
     u.glow.material = new THREE.MeshBasicMaterial({ map: wt, toneMapped: false });
   }
   if (!u.halo){
-    if (!haloTex) haloTex = glowTexture('rgba(255,236,190,1)', 'rgba(255,190,90,.45)');
+    if (!haloTex) haloTex = glowTexture('rgba(255,252,240,1)', 'rgba(255,214,130,.75)');
     u.halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTex, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
     u.halo.scale.set(TILE*2.6, TILE*2.6, 1); u.halo.position.set(0, 0, .12); t.add(u.halo);
   }
@@ -455,7 +480,7 @@ function openTileAnim(t){
   $('tileLabel').hidden = true;
   openTile = t; state = 'toSpace'; showOnly(null); $('gl').classList.remove('hover'); $('tip').hidden = true;
   var n = new THREE.Vector3(-p.x, 0, 0).normalize();
-  anim = { t: 0, dur: reduce ? .01 : 1.9, tile: t, yaw0: yaw, pitch0: pitch, yaw1: targetYaw, pitch1: targetPitch,
+  anim = { t: 0, dur: reduce ? .01 : 1.7, tile: t, yaw0: yaw, pitch0: pitch, yaw1: targetYaw, pitch1: targetPitch,
     from: new THREE.Vector3(0, 1.6, 0), to: new THREE.Vector3(0, 1.6, 0).lerp(p, .18) };
 }
 function runAnim(dt){
@@ -470,20 +495,18 @@ function runAnim(dt){
     a.mix = ease(k); if (k >= 1){ anim = null; a.done(); }
   } else if (state === 'toSpace'){
     var t = a.tile, u = t.userData;
-    if (u.hinge) u.hinge.rotation.x = -1.1*ease(k*3);
-    u.open = ease((k - .25)/.45); u.pivot.rotation.y = -1.55*u.open; u.glow.visible = u.open > 0;
-    if (u.halo) u.halo.material.opacity = .85*u.open;
-    if (u.glow.material.uniforms) u.glow.material.uniforms.glow.value = .25*(1 - u.open) + .08;
-    yaw = tYaw = a.yaw0 + (a.yaw1 - a.yaw0)*ease(k*1.6); pitch = tPitch = a.pitch0 + (a.pitch1 - a.pitch0)*ease(k*1.6);
-    var m = ease((k - .35)/.65); camera.position.lerpVectors(a.from, a.to, m); camZ = 0; setFov(72 - 8*m);
+    yaw = tYaw = a.yaw0 + (a.yaw1 - a.yaw0)*ease(k*1.8); pitch = tPitch = a.pitch0 + (a.pitch1 - a.pitch0)*ease(k*1.8);
+    var burst = ease((k - .3)/.7);
+    if (u.halo){ u.halo.material.opacity = Math.min(1, .2 + 1.2*burst); var hs = TILE*(1.8 + 9*burst*burst); u.halo.scale.set(hs, hs, 1); }
+    flashTo(Math.max(0, (k - .55)/.45)*.97, 1);
     if (k >= 1){ anim = null;
       if (u.kind !== 'plus') openSpace(u.item, u.kind === 'shared');
       else if (reduce) showGate();
-      else { state = 'reveal'; anim = { t: 0, dur: 1.2, mix: 0, base: 'gallery', overScene: roomScene, overMesh: roomMesh, done: showGate }; } }
+      else { flashTo(0, 1300); state = 'reveal'; anim = { t: 0, dur: .3, mix: 0, base: 'gallery', overScene: roomScene, overMesh: roomMesh, done: showGate }; } }
   }
 }
 function closeOpenTile(){
-  if (!openTile) return; var u = openTile.userData; u.pivot.rotation.y = 0; u.open = 0; u.glow.visible = false; if (u.halo) u.halo.material.opacity = 0; if (u.hinge) u.hinge.rotation.x = 0; openTile = null;
+  if (!openTile) return; var u = openTile.userData; u.pivot.rotation.y = 0; u.open = 0; u.glow.visible = false; if (u.halo){ u.halo.material.opacity = 0; u.halo.scale.set(TILE*1.8, TILE*1.8, 1); } if (u.hinge) u.hinge.rotation.x = 0; openTile = null;
 }
 function backToGallery(){
   $('altarBtn').hidden = true; $('toFrame').hidden = true; closeNote();
@@ -506,6 +529,7 @@ function openSpace(item, isShared){
     if (spaceMesh){ spaceScene.remove(spaceMesh); disposeMesh(spaceMesh); }
     spaceMesh = panoMesh(c); spaceScene.add(spaceMesh);
     $('panel').hidden = true; $('tip').hidden = true;
+    flashTo(0, 1300);
     if (!reduce && (state === 'toSpace' || state === 'gate')){ anim = { t: 0, dur: 1.1, mix: 0, base: state === 'gate' ? 'room' : 'gallery', overScene: spaceScene, overMesh: spaceMesh, done: finish }; state = 'reveal'; return; }
     finish();
   };
@@ -767,13 +791,14 @@ function start(){
   resize(); window.addEventListener('resize', resize);
   bindControls(); bindUI(); connectShared();
   var fontsReady = (document.fonts && document.fonts.load) ? Promise.all([document.fonts.load('800 40px Heebo'), document.fonts.ready]).catch(function(){}) : Promise.resolve();
-  Promise.all([loadImage('entrance.jpg'), loadImage('tile.jpg'), loadImage('tile-add-new.jpg'), loadImage('wall.jpg'), loadImage('hall.jpg'), loadImage('room.jpg'), loadImage('tile-back.jpg'), fontsReady]).then(function(r){
-    IMG.tile = r[1]; IMG.tileAdd = r[2]; IMG.wall = r[3]; IMG.hall = r[4]; IMG.room = r[5]; IMG.tileBack = r[6];
-    roomScene = new THREE.Scene(); roomScene.background = new THREE.Color('#060817'); roomMesh = panoMesh(toPanoCanvas(r[5], false)); roomScene.add(roomMesh);
-    buildEntry(r[0]); buildGallery(); rebuildTiles();
+  var minShow = new Promise(function(ok){ setTimeout(ok, 2200); });
+  Promise.all([minShow, loadImage('entrance.jpg'), loadImage('tile.jpg'), loadImage('tile-add-new.jpg'), loadImage('wall.jpg'), loadImage('hall.jpg'), loadImage('room.jpg'), loadImage('tile-back.jpg'), fontsReady]).then(function(r){
+    IMG.tile = r[2]; IMG.tileAdd = r[3]; IMG.wall = r[4]; IMG.hall = r[5]; IMG.room = r[6]; IMG.tileBack = r[7];
+    roomScene = new THREE.Scene(); roomScene.background = new THREE.Color('#060817'); roomMesh = panoMesh(toPanoCanvas(r[6], false)); roomScene.add(roomMesh);
+    buildEntry(r[1]); buildGallery(); rebuildTiles();
     pitch = tPitch = .05; setFov(80); requestAnimationFrame(tick);
     var l = $('loader'); l.style.opacity = 0; setTimeout(function(){ l.hidden = true; }, 850);
-  }).catch(function(){ $('loader').textContent = 'לא הצלחנו לטעון את שער הזמן. רעננו את הדף.'; });
+  }).catch(function(){ $('loader').querySelector('p').textContent = 'לא הצלחנו לטעון את שער הזמן. רעננו את הדף.'; });
 }
 start();
 })();
