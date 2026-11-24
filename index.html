@@ -151,10 +151,10 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
     <h2 id="pTitle">מרחב זמן חדש</h2>
     <p>העלו תמונת 360, והיא תהפוך לאריח זהב על קיר המנהרה.</p>
     <label for="spaceTitle">שם המרחב
-      <input type="text" id="spaceTitle" maxlength="40" required aria-required="true" placeholder="למשל: בית המקדש, חנוכת המזבח">
+      <input type="text" id="spaceTitle" maxlength="40" required aria-required="true">
     </label>
     <label for="creatorName">השם שלכם
-      <input type="text" id="creatorName" maxlength="30" required aria-required="true" autocomplete="name" placeholder="למשל: שירה">
+      <input type="text" id="creatorName" maxlength="30" required aria-required="true" autocomplete="name">
     </label>
     <div class="drop" id="drop" tabindex="0" role="button" aria-label="בחירת תמונה להעלאה">
       <button class="gold" id="pick" type="button" tabindex="-1">בחירת תמונה</button>
@@ -173,13 +173,13 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
   <h2 id="pfTitle">פרומפט לתמונת 360</h2>
   <p>מלאו, העתיקו, והדביקו ב-ChatGPT או ב-Gemini.</p>
   <label for="pfPlace">לאן ולאיזו תקופה?
-    <input type="text" id="pfPlace" maxlength="120" placeholder="למשל: מחנה המכבים בהרי יהודה, ערב הקרב ביוונים">
+    <input type="text" id="pfPlace" maxlength="120">
   </label>
   <label for="pfAround">מה רואים מסביב?
-    <textarea id="pfAround" rows="3" maxlength="400" placeholder="למשל: לוחמים מכינים חרבות, אוהלים ועצי זית, ומעבר לעמק מחנה היוונים עם פילים"></textarea>
+    <textarea id="pfAround" rows="3" maxlength="400"></textarea>
   </label>
   <label for="pfMood">שעה ואווירה (לא חובה)
-    <input type="text" id="pfMood" maxlength="120" placeholder="למשל: שקיעה, עשן מהמדורות, מתח לפני הקרב">
+    <input type="text" id="pfMood" maxlength="120">
   </label>
   <button class="gold" id="copyPrompt" type="button">העתקת הפרומפט</button>
   <p class="saveNote" id="pfStatus" role="status"></p>
@@ -805,7 +805,7 @@ function bindUI(){
     if (state !== 'gate') return; var items = (e.clipboardData && e.clipboardData.items) || [];
     for (var i = 0; i < items.length; i++) if (items[i].type.indexOf('image') === 0){ e.preventDefault(); takeFile(items[i].getAsFile()); return; }
   });
-  var PROMPT_TEMPLATE = 'A 360-degree equirectangular panorama photo sphere, exactly 2:1 aspect ratio, like a VR or Google Street View photosphere. The scene wraps completely around the viewer: what is behind me continues seamlessly from the right edge to the left edge. The horizon is a straight line exactly at the vertical middle of the image; the ground curves and stretches across the bottom and the sky stretches across the top, as in a spherical projection. I have just stepped through a glowing golden time-travel door, and now I am standing in: [לאן ולאיזו תקופה, למשל: מחנה המכבים בהרי יהודה, ערב הקרב ביוונים]. All around me, in every direction: [מה רואים מסביב: אנשים, חפצים, בניינים, נוף]. Time of day and atmosphere: [למשל: שקיעה, ערב חורף, אור של מנורות שמן]. Behind me, the golden door I came through is still glowing. Viewpoint at human eye level in the middle of a wide open space. Shot like a film still: real textures, natural practical light, subtle film grain. No text, no frame, no borders, not a flat photo.';
+  var PROMPT_TEMPLATE = 'A 360-degree equirectangular panorama photo sphere, exactly 2:1 aspect ratio, like a VR or Google Street View photosphere. The scene wraps completely around the viewer: what is behind me continues seamlessly from the right edge to the left edge. The horizon is a straight line exactly at the vertical middle of the image; the ground curves and stretches across the bottom and the sky stretches across the top, as in a spherical projection. I have just stepped through a glowing golden time-travel door, and now I am standing in: [PLACE]. All around me, in every direction: [AROUND]. Time of day and atmosphere: [MOOD]. Behind me, the golden door I came through is still glowing. Viewpoint at human eye level in the middle of a wide open space. Shot like a film still: real textures, natural practical light, subtle film grain. No text, no frame, no borders, not a flat photo.';
   function buildPrompt(){
     var place = $('pfPlace').value.trim(), around = $('pfAround').value.trim(), mood = $('pfMood').value.trim();
     var parts = PROMPT_TEMPLATE.split(/\[[^\]]*\]/);
