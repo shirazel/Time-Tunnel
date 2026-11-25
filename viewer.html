@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>צופה 360</title>
+<meta name="description" content="פותחים תמונת 360 מהמחשב או מהטלפון ומסתובבים בתוכה. התמונה נשארת אצלכם ולא עולה לשום מקום.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&display=swap">
+<style>
+:root{
+  --night:#060817; --night2:#141033; --gold:#e8b94a; --gold-hi:#ffe3a1; --gold-lo:#9a6a1a;
+  --ink:#f7efdc; --mute:#c4bddf; --glass:rgba(10,12,32,.72); --line:rgba(232,185,74,.5);
+  --font:'Heebo','Segoe UI',Arial,sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;background:var(--night);color:var(--ink);font-family:var(--font);overflow:hidden;-webkit-tap-highlight-color:transparent}
+#stage{position:fixed;inset:0;display:block;width:100%;height:100%;touch-action:none;cursor:grab;outline:none}
+#stage.drag{cursor:grabbing}
+
+/* start screen */
+.start{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px 16px;
+  background:radial-gradient(ellipse at 50% 35%,rgba(232,185,74,.16),transparent 55%),radial-gradient(ellipse at 20% 90%,rgba(70,90,220,.22),transparent 60%),linear-gradient(160deg,var(--night),var(--night2));overflow:auto}
+.panel{width:min(520px,100%);text-align:center;display:flex;flex-direction:column;gap:18px;align-items:center}
+h1{margin:0;font-weight:800;font-size:clamp(40px,9vw,68px);line-height:1;color:var(--gold-hi);
+  text-shadow:0 0 28px rgba(232,185,74,.45),0 3px 0 var(--gold-lo)}
+.lead{margin:0;font-size:clamp(16px,2.6vw,19px);line-height:1.55;max-width:28em;text-wrap:balance}
+.drop{width:100%;border:2px dashed var(--line);border-radius:22px;padding:30px 18px;background:rgba(232,185,74,.05);
+  display:flex;flex-direction:column;gap:14px;align-items:center;transition:background .2s,border-color .2s}
+.drop.over{background:rgba(232,185,74,.15);border-color:var(--gold-hi)}
+.drop p{margin:0;font-size:15px;color:var(--mute);line-height:1.5}
+.note{margin:0;font-size:14px;color:var(--mute);line-height:1.6;max-width:30em}
+.err{margin:0;font-size:15px;color:#ffb4a1;min-height:1.4em}
+
+/* buttons */
+.btn{font-family:var(--font);font-weight:800;font-size:18px;min-height:52px;padding:10px 28px;border-radius:999px;cursor:pointer;
+  color:#3d2404;border:1px solid #fff0c2;background:linear-gradient(180deg,#ffe8a8,#e8b94a 55%,#b98228);
+  box-shadow:0 6px 18px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.7),0 0 22px rgba(232,185,74,.35);transition:transform .15s,box-shadow .15s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.7),0 0 30px rgba(232,185,74,.55)}
+.btn:active{transform:translateY(1px)}
+.tool{font-family:var(--font);font-weight:700;font-size:15px;min-height:46px;min-width:46px;padding:8px 16px;border-radius:999px;cursor:pointer;
+  color:var(--gold-hi);background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  display:inline-flex;align-items:center;gap:8px;transition:background .15s,border-color .15s}
+.tool:hover{background:rgba(40,30,12,.8);border-color:var(--gold-hi)}
+.tool[aria-pressed="true"]{background:rgba(232,185,74,.28);border-color:var(--gold-hi);color:#fff6dc}
+.tool svg{width:20px;height:20px;flex:none}
+.btn:focus-visible,.tool:focus-visible{outline:none;box-shadow:0 0 0 3px var(--night),0 0 0 5px var(--gold-hi)}
+
+/* viewer chrome */
+.bar{position:fixed;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;justify-content:center;gap:8px;
+  padding:12px max(16px,env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  background:linear-gradient(transparent,rgba(0,0,0,.55));transition:opacity .4s}
+.name{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);max-width:calc(100% - 32px);
+  font-weight:700;font-size:15px;color:var(--ink);background:var(--glass);border:1px solid rgba(232,185,74,.3);border-radius:999px;padding:6px 16px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity .4s}
+.hint{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;text-align:center;
+  font-weight:700;font-size:clamp(16px,2.4vw,20px);color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.9);
+  background:rgba(0,0,0,.35);padding:14px 22px;border-radius:18px;transition:opacity .8s}
+.idle .bar,.idle .name{opacity:0}
+.busy{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(6,8,23,.7);font-weight:700;font-size:20px;color:var(--gold-hi)}
+@media (max-width:520px){ .tool .lbl{display:none} .tool{padding:8px 12px} }
+@media (prefers-reduced-motion:reduce){ *{transition:none!important} }
+</style>
+</head>
+<body>
+
+<canvas id="stage" tabindex="0" aria-label="תמונת 360. גוררים כדי להסתכל מסביב, גלגלת או צביטה לזום, חיצים במקלדת" hidden></canvas>
+
+<section class="start" id="start">
+  <div class="panel">
+    <h1>צופה 360</h1>
+    <p class="lead">פותחים תמונת 360 שיצרתם, ומסתובבים בתוכה כאילו אתם עומדים באמצע.</p>
+    <div class="drop" id="drop">
+      <button class="btn" id="pick" type="button">בחירת תמונה</button>
+      <p>או גוררים תמונה לכאן, או מדביקים עם Ctrl+V</p>
+    </div>
+    <p class="err" id="err" role="alert"></p>
+    <p class="note">התמונה נשארת אצלכם במכשיר ולא עולה לשום מקום.<br>הכי טוב: תמונה רחבה ביחס 2:1. גם תמונה רגילה תיפתח, ככיפה רחבה מולכם.</p>
+  </div>
+  <input type="file" id="file" accept="image/*" hidden>
+</section>
+
+<div id="viewer" hidden>
+  <div class="name" id="name"></div>
+  <div class="hint" id="hint">גוררים כדי להסתכל מסביב</div>
+  <div class="bar" role="toolbar" aria-label="כלי הצפייה">
+    <button class="tool" id="other" type="button" aria-label="תמונה אחרת"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-8 8"/></svg><span class="lbl">תמונה אחרת</span></button>
+    <button class="tool" id="spin" type="button" aria-label="סיבוב אוטומטי" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg><span class="lbl">סיבוב אוטומטי</span></button>
+    <button class="tool" id="gyro" type="button" aria-label="הזזת הטלפון" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg><span class="lbl">הזזת הטלפון</span></button>
+    <button class="tool" id="zoomIn" type="button" aria-label="התקרבות"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M8 11h6M11 8v6"/></svg></button>
+    <button class="tool" id="zoomOut" type="button" aria-label="התרחקות"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M8 11h6"/></svg></button>
+    <button class="tool" id="full" type="button" aria-label="מסך מלא"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><span class="lbl">מסך מלא</span></button>
+  </div>
+</div>
+
+<div class="busy" id="busy" hidden>פותחים את התמונה...</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+var $ = function(id){ return document.getElementById(id); };
+var stage = $('stage'), renderer, scene, camera, sphere = null;
+var yaw = 0, pitch = 0, fov = 80, FOV_MIN = 30, FOV_MAX = 100;
+var spinning = false, gyroOn = false, gyroBase = null, lastInput = 0;
+var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function err(t){ $('err').textContent = t || ''; }
+if (!window.THREE){ err('לא הצלחנו לטעון את הצופה. בדקו את החיבור לאינטרנט ונסו לרענן.'); return; }
+
+function init(){
+  if (renderer) return true;
+  try { renderer = new THREE.WebGLRenderer({ canvas: stage, antialias: true }); }
+  catch(e){ err('הדפדפן הזה לא מציג תלת-ממד. נסו בכרום או בספארי מעודכנים.'); return false; }
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(fov, 1, .1, 100); camera.rotation.order = 'YXZ';
+  resize(); addEventListener('resize', resize);
+  requestAnimationFrame(loop);
+  return true;
+}
+function resize(){ if (!renderer) return; var w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w/h; camera.updateProjectionMatrix(); }
+
+/* ---------- the picture onto the sphere ---------- */
+function canvas(w, h){ var c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+function toPano(im){
+  var w = im.naturalWidth, h = im.naturalHeight, r = w/h;
+  var maxT = Math.min(renderer.capabilities.maxTextureSize || 4096, 8192);
+  var W = Math.min(Math.max(w, 1024), maxT); W -= W % 2; var H = W/2;        // full resolution, as far as the device allows
+  var c = canvas(W, H), x = c.getContext('2d');
+  if (r >= 1.9) x.drawImage(im, 0, 0, W, H);
+  else dome(x, im, r, W, H);
+  return c;
+}
+// a regular picture: a wide dome in front of you, its edges melting into a blurred continuation of itself
+function dome(x, im, r, W, H){
+  x.save(); x.filter = 'blur(' + Math.round(H*.045) + 'px) brightness(.62) saturate(1.15)';
+  x.drawImage(im, -W*.04, -H*.06, W*1.08, H*1.12); x.restore();
+  var span = Math.min(240, Math.max(150, r*120)), iw = W*span/360, ih = Math.min(H*.84, iw/r); iw = ih*r;
+  var o = canvas(Math.round(iw), Math.round(ih)), ox = o.getContext('2d'); ox.drawImage(im, 0, 0, o.width, o.height);
+  ox.globalCompositeOperation = 'destination-out';
+  var fx = Math.round(o.width*.1), fy = Math.round(o.height*.12);
+  [[0,0,fx,0, 0,0,fx,o.height],[o.width,0,o.width-fx,0, o.width-fx,0,fx,o.height],[0,0,0,fy, 0,0,o.width,fy],[0,o.height,0,o.height-fy, 0,o.height-fy,o.width,fy]].forEach(function(a){
+    var g = ox.createLinearGradient(a[0],a[1],a[2],a[3]); g.addColorStop(0,'rgba(0,0,0,1)'); g.addColorStop(1,'rgba(0,0,0,0)');
+    ox.fillStyle = g; ox.fillRect(a[4],a[5],a[6],a[7]); });
+  x.drawImage(o, (W - o.width)/2, (H - o.height)/2);
+}
+function show(im, title){
+  if (sphere){ scene.remove(sphere); sphere.geometry.dispose(); sphere.material.map.dispose(); sphere.material.dispose(); }
+  var t = new THREE.CanvasTexture(toPano(im)); t.encoding = THREE.sRGBEncoding;
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy(); t.minFilter = THREE.LinearFilter; t.generateMipmaps = false;
+  sphere = new THREE.Mesh(new THREE.SphereGeometry(30, 96, 64), new THREE.MeshBasicMaterial({ map: t, side: THREE.BackSide }));
+  sphere.scale.x = -1; sphere.rotation.y = -Math.PI/2;   // the middle of the picture straight ahead
+  scene.add(sphere);
+  yaw = 0; pitch = 0; fov = innerWidth < innerHeight ? 90 : 80; gyroBase = null;
+  $('name').textContent = title || '';
+  $('start').hidden = true; $('viewer').hidden = false; stage.hidden = false; resize();
+  var h = $('hint'); h.style.opacity = 1; setTimeout(function(){ h.style.opacity = 0; }, 3200);
+  poke(); try { stage.focus({ preventScroll: true }); } catch(e){}
+}
+
+/* ---------- opening a file ---------- */
+function open(file){
+  err('');
+  if (!file || !/^image\//.test(file.type)){ err('זה לא קובץ תמונה. בחרו קובץ JPG, PNG או WEBP.'); return; }
+  if (!init()) return;
+  $('busy').hidden = false;
+  var url = URL.createObjectURL(file), im = new Image();
+  im.onload = function(){
+    setTimeout(function(){
+      try { show(im, (file.name || '').replace(/\.[^.]+$/, '')); }
+      catch(e){ err('לא הצלחנו לפתוח את התמונה הזו. נסו תמונה אחרת.'); }
+      $('busy').hidden = true; URL.revokeObjectURL(url);
+    }, 30);
+  };
+  im.onerror = function(){ $('busy').hidden = true; URL.revokeObjectURL(url); err('לא הצלחנו לקרוא את התמונה. נסו לשמור אותה מחדש כ-JPG.'); };
+  im.src = url;
+}
+$('pick').addEventListener('click', function(){ $('file').click(); });
+$('other').addEventListener('click', function(){ $('file').value = ''; $('file').click(); });
+$('file').addEventListener('change', function(){ if (this.files[0]) open(this.files[0]); });
+var drop = $('drop');
+['dragenter','dragover'].forEach(function(n){ document.addEventListener(n, function(e){ e.preventDefault(); drop.classList.add('over'); }); });
+['dragleave','drop'].forEach(function(n){ document.addEventListener(n, function(e){ e.preventDefault(); if (n === 'drop' || !e.relatedTarget) drop.classList.remove('over'); }); });
+document.addEventListener('drop', function(e){ var f = e.dataTransfer && e.dataTransfer.files[0]; if (f) open(f); });
+document.addEventListener('paste', function(e){
+  var items = (e.clipboardData && e.clipboardData.items) || [];
+  for (var i = 0; i < items.length; i++) if (/^image\//.test(items[i].type)){ open(items[i].getAsFile()); return; }
+});
+
+/* ---------- looking around ---------- */
+var pointers = {}, dragging = false, lastX = 0, lastY = 0, pinch0 = 0, fov0 = 0;
+function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+function poke(){ lastInput = performance.now(); document.body.classList.remove('idle'); }
+stage.addEventListener('pointerdown', function(e){
+  stage.setPointerCapture(e.pointerId); pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+  var ids = Object.keys(pointers);
+  if (ids.length === 2){ var a = pointers[ids[0]], b = pointers[ids[1]]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); fov0 = fov; dragging = false; }
+  else { dragging = true; lastX = e.clientX; lastY = e.clientY; stage.classList.add('drag'); }
+  stopSpin(); poke();
+});
+stage.addEventListener('pointermove', function(e){
+  if (!pointers[e.pointerId]) return;
+  pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+  var ids = Object.keys(pointers);
+  if (ids.length === 2 && pinch0){ var a = pointers[ids[0]], b = pointers[ids[1]]; fov = clamp(fov0*pinch0/Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), FOV_MIN, FOV_MAX); }
+  else if (dragging){
+    var k = fov/innerHeight*Math.PI/180;   // the picture follows the finger
+    yaw += (e.clientX - lastX)*k; pitch += (e.clientY - lastY)*k; pitch = clamp(pitch, -1.45, 1.45);
+    lastX = e.clientX; lastY = e.clientY;
+  }
+  poke();
+});
+function up(e){ delete pointers[e.pointerId]; if (Object.keys(pointers).length < 2) pinch0 = 0; if (!Object.keys(pointers).length){ dragging = false; stage.classList.remove('drag'); } }
+stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
+stage.addEventListener('wheel', function(e){ e.preventDefault(); fov = clamp(fov*(1 + e.deltaY*.0012), FOV_MIN, FOV_MAX); poke(); }, { passive: false });
+addEventListener('keydown', function(e){
+  if ($('viewer').hidden) return;
+  var s = .06, used = true;
+  if (e.key === 'ArrowLeft') yaw += s; else if (e.key === 'ArrowRight') yaw -= s;
+  else if (e.key === 'ArrowUp') pitch = clamp(pitch + s, -1.45, 1.45); else if (e.key === 'ArrowDown') pitch = clamp(pitch - s, -1.45, 1.45);
+  else if (e.key === '+' || e.key === '=') fov = clamp(fov - 5, FOV_MIN, FOV_MAX); else if (e.key === '-') fov = clamp(fov + 5, FOV_MIN, FOV_MAX);
+  else used = false;
+  if (used){ e.preventDefault(); stopSpin(); poke(); }
+});
+addEventListener('mousemove', poke);
+
+/* ---------- tools ---------- */
+function stopSpin(){ spinning = false; $('spin').setAttribute('aria-pressed', 'false'); }
+$('spin').addEventListener('click', function(){ spinning = !spinning; this.setAttribute('aria-pressed', String(spinning)); });
+$('zoomIn').addEventListener('click', function(){ fov = clamp(fov - 10, FOV_MIN, FOV_MAX); });
+$('zoomOut').addEventListener('click', function(){ fov = clamp(fov + 10, FOV_MIN, FOV_MAX); });
+var root = document.documentElement;
+var canFull = !!(root.requestFullscreen || root.webkitRequestFullscreen);
+if (!canFull) $('full').hidden = true;
+$('full').addEventListener('click', function(){
+  var fs = document.fullscreenElement || document.webkitFullscreenElement;
+  if (fs) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  else (root.requestFullscreen || root.webkitRequestFullscreen).call(root);
+});
+
+// moving the phone to look around
+var hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+if (window.DeviceOrientationEvent && hasTouch) $('gyro').hidden = false;
+var orient = null;
+addEventListener('deviceorientation', function(e){ if (e.alpha !== null) orient = e; });
+$('gyro').addEventListener('click', function(){
+  var btn = this;
+  if (gyroOn){ gyroOn = false; btn.setAttribute('aria-pressed', 'false'); return; }
+  var go = function(){ gyroOn = true; gyroBase = null; stopSpin(); btn.setAttribute('aria-pressed', 'true'); };
+  if (typeof DeviceOrientationEvent.requestPermission === 'function'){
+    DeviceOrientationEvent.requestPermission().then(function(s){ if (s === 'granted') go(); else err(''); }).catch(function(){});
+  } else go();
+});
+var gq = new THREE.Quaternion(), ge = new THREE.Euler(), q1 = new THREE.Quaternion(-Math.sqrt(.5), 0, 0, Math.sqrt(.5)), zee = new THREE.Vector3(0, 0, 1), q0 = new THREE.Quaternion();
+function gyroPose(){
+  if (!orient) return false;
+  var d = Math.PI/180, sa = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+  ge.set(orient.beta*d, orient.alpha*d, -orient.gamma*d, 'YXZ');
+  gq.setFromEuler(ge); gq.multiply(q1); gq.multiply(q0.setFromAxisAngle(zee, -sa*d));
+  var e = new THREE.Euler().setFromQuaternion(gq, 'YXZ');
+  if (gyroBase === null) gyroBase = e.y - yaw;     // start from where you are looking now
+  yaw = e.y - gyroBase; pitch = clamp(e.x, -1.45, 1.45); camera.rotation.z = e.z;
+  return true;
+}
+
+/* ---------- render ---------- */
+var last = performance.now();
+function loop(now){
+  requestAnimationFrame(loop);
+  var dt = Math.min(.05, (now - last)/1000); last = now;
+  if (!sphere) return;
+  if (spinning) yaw += dt*(reduce ? .05 : .12);
+  if (!(gyroOn && gyroPose())) camera.rotation.z = 0;
+  camera.rotation.y = yaw; camera.rotation.x = pitch;
+  if (Math.abs(camera.fov - fov) > .01){ camera.fov += (fov - camera.fov)*Math.min(1, dt*12); camera.updateProjectionMatrix(); }
+  if (now - lastInput > 3500 && !dragging) document.body.classList.add('idle');
+  renderer.render(scene, camera);
+}
+})();
+</script>
+</body>
+</html>
