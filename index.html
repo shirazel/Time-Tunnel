@@ -616,7 +616,7 @@ function openTileAnim(t){
   openTile = t; state = 'toSpace'; showOnly(null); $('gl').classList.remove('hover'); $('tip').hidden = true;
   var n = new THREE.Vector3(-p.x, 0, 0).normalize();
   var soft = !reduce && tu.kind !== 'plus';
-  anim = { t: 0, dur: reduce ? .01 : soft ? .8 : 1.7, soft: soft, fov0: fov, tile: t, yaw0: yaw, pitch0: pitch, yaw1: targetYaw, pitch1: targetPitch,
+  anim = { t: 0, dur: reduce ? .01 : soft ? 3.4 : 1.7, soft: soft, cam0: camera.position.clone(), fov0: fov, tile: t, yaw0: yaw, pitch0: pitch, yaw1: targetYaw, pitch1: targetPitch,
     from: new THREE.Vector3(0, 1.6, 0), to: new THREE.Vector3(0, 1.6, 0).lerp(p, .18) };
 }
 function runAnim(dt){
@@ -630,12 +630,23 @@ function runAnim(dt){
   } else if (state === 'reveal'){
     a.mix = ease(k); if (k >= 1){ anim = null; a.done(); }
   } else if (state === 'toSpace' && a.soft){
-    // a soft merge: the eye turns gently to the tile, it opens a little and glows, then the space dissolves in over the tunnel
-    var tt = a.tile, uu = tt.userData, kk = Math.min(1, k), ek = ease(kk);
-    yaw = tYaw = a.yaw0 + (a.yaw1 - a.yaw0)*ek; pitch = tPitch = a.pitch0 + (a.pitch1 - a.pitch0)*ek;
-    setFov(a.fov0 + (a.fov0*.8 - a.fov0)*ek);
-    if (uu.hinge) uu.hinge.rotation.x = -.5*ek;
-    if (uu.halo){ uu.halo.material.opacity = .25 + .5*ek; var hs2 = TILE*(1.8 + .8*ek); uu.halo.scale.set(hs2, hs2, 1); }
+    // through the little window: the eye turns to the tile, its door swings open onto the event's room,
+    // then we walk slowly up to the window until the room fills the view, and step in
+    var tt = a.tile, uu = tt.userData, kk = Math.min(1, k);
+    if (!a.end){
+      var nrm = a.cam0.clone().sub(tt.position).normalize(), win = TILE*.96*(uu.base || 1);
+      a.end = tt.position.clone().add(nrm.multiplyScalar(win*.22));
+    }
+    var turn = ease(kk/.28);
+    yaw = tYaw = a.yaw0 + (a.yaw1 - a.yaw0)*turn; pitch = tPitch = a.pitch0 + (a.pitch1 - a.pitch0)*turn;
+    var door = ease((kk - .12)/.3);
+    uu.pivot.rotation.y = -1.9*door; uu.glow.visible = door > 0;
+    if (uu.glow.material.uniforms) uu.glow.material.uniforms.glow.value = .55*(1 - ease((kk - .2)/.4));
+    if (uu.halo){ uu.halo.material.opacity = .55*door*(1 - ease((kk - .35)/.25)); }
+    uu.rim.visible = kk < .4;
+    var walk = ease((kk - .36)/.64);
+    camera.position.copy(a.cam0).lerp(a.end, walk);
+    setFov(a.fov0 + (66 - a.fov0)*ease(kk/.5));
     if (k >= 1){ anim = null; openSpace(uu.item, uu.kind === 'shared'); }
   } else if (state === 'toSpace'){
     var t = a.tile, u = t.userData;
@@ -651,7 +662,7 @@ function runAnim(dt){
   }
 }
 function closeOpenTile(){
-  if (!openTile) return; var u = openTile.userData; u.pivot.rotation.y = 0; u.open = 0; u.glow.visible = false; if (u.halo){ u.halo.material.opacity = 0; u.halo.scale.set(TILE*1.8, TILE*1.8, 1); } if (u.hinge) u.hinge.rotation.x = 0; openTile = null;
+  if (!openTile) return; var u = openTile.userData; u.pivot.rotation.y = 0; u.open = 0; u.glow.visible = false; u.rim.visible = true; if (u.halo){ u.halo.material.opacity = 0; u.halo.scale.set(TILE*1.8, TILE*1.8, 1); } if (u.hinge) u.hinge.rotation.x = 0; openTile = null;
 }
 function backToGallery(){
   $('arrival').hidden = true;
@@ -681,7 +692,7 @@ function openSpace(item, isShared){
     spaceMesh = panoMesh(c); spaceScene.add(spaceMesh);
     $('panel').hidden = true; $('tip').hidden = true;
     flashTo(0, 900); $('arrival').hidden = true;
-    if (!reduce && (state === 'gate' || state === 'toSpace')){ anim = { t: 0, dur: state === 'gate' ? 1.1 : 1.6, mix: 0, base: state === 'gate' ? 'room' : 'gallery', overScene: spaceScene, overMesh: spaceMesh, done: finish }; state = 'reveal'; return; }
+    if (!reduce && (state === 'gate' || state === 'toSpace')){ anim = { t: 0, dur: state === 'gate' ? 1.1 : .9, mix: 0, base: state === 'gate' ? 'room' : 'gallery', overScene: spaceScene, overMesh: spaceMesh, done: finish }; state = 'reveal'; return; }
     finish();
   };
   var finish = function(){
