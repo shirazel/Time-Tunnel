@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>ניהול מנהרת הזמן</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--night:#060817;--gold:#e8b94a;--gold-hi:#ffe3a1;--gold-lo:#9a6a1a;--ink:#f7efdc;--mute:#b9b2d6;--glass:rgba(12,14,38,.8);--line:rgba(232,185,74,.45);--ok:#8fd19e;--bad:#ffb4a2;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--night);color:var(--ink);font-family:'Heebo','Segoe UI',Arial,sans-serif}
+body{min-height:100vh;background:radial-gradient(ellipse at 50% 0,#141838 0,var(--night) 60%)}
+main{max-width:980px;margin:0 auto;padding:28px 16px 60px}
+h1{font-weight:800;font-size:clamp(28px,4.5vw,44px);margin:0 0 4px;text-align:center;
+  background:linear-gradient(180deg,#fff6d6 0%,#f0c868 45%,#b9821f 70%,#f3d27c 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{text-align:center;color:var(--mute);margin:0 0 24px}
+.login{max-width:380px;margin:40px auto;display:grid;gap:12px;background:var(--glass);border:1px solid var(--line);border-radius:18px;padding:22px}
+label{font-weight:700;display:grid;gap:6px}
+input{font-family:inherit;font-size:17px;padding:11px 16px;border-radius:999px;border:1px solid var(--line);background:rgba(20,14,6,.75);color:var(--ink)}
+button{font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;border-radius:999px;padding:10px 20px;min-height:44px;border:1px solid var(--gold)}
+.primary{background:linear-gradient(180deg,#ffe3a1,#e8b94a 55%,#b9821f);color:#3a2200;border-color:#b9821f}
+.ghost{background:transparent;color:var(--gold-hi)}
+.danger{background:transparent;color:var(--bad);border-color:rgba(255,180,162,.6)}
+.danger.armed{background:#7a2416;color:#fff}
+button:disabled{opacity:.55;cursor:default}
+button:focus-visible,input:focus-visible{outline:2px solid var(--gold-hi);outline-offset:3px}
+.tabs{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:18px}
+.tabs button[aria-pressed="true"]{background:rgba(232,185,74,.2)}
+.status{text-align:center;min-height:1.5em;color:var(--gold-hi);margin:0 0 14px}
+.err{color:var(--bad)}
+.list{display:grid;gap:16px}
+.card{display:grid;grid-template-columns:minmax(0,260px) 1fr;gap:16px;background:var(--glass);border:1px solid var(--line);border-radius:16px;padding:14px}
+.thumb{width:100%;aspect-ratio:2/1;object-fit:cover;border-radius:10px;background:#0c0e26;border:1px solid rgba(232,185,74,.3);display:block}
+.card h2{margin:0;font-size:22px;color:var(--gold-hi)}
+.meta{margin:4px 0 0;color:var(--gold);font-weight:700}
+.desc{margin:8px 0 0;line-height:1.5}
+.by{margin:8px 0 0;color:var(--mute);font-size:14px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.empty{text-align:center;color:var(--mute);padding:30px 0}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+@media (max-width:620px){.card{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+  <h1>ניהול מנהרת הזמן</h1>
+  <p class="lead">אישור אירועים לפני שהם מופיעים במנהרה</p>
+
+  <form class="login" id="login">
+    <label for="pw">סיסמת ניהול
+      <input type="password" id="pw" autocomplete="current-password" required>
+    </label>
+    <button class="primary" type="submit">כניסה</button>
+    <p class="err" id="loginErr" role="alert" hidden></p>
+  </form>
+
+  <section id="admin" hidden>
+    <div class="bar">
+      <div class="tabs" role="group" aria-label="תצוגה">
+        <button class="ghost" type="button" id="tabPending" aria-pressed="true">ממתינים לאישור</button>
+        <button class="ghost" type="button" id="tabApproved" aria-pressed="false">מאושרים</button>
+      </div>
+      <div class="tabs">
+        <button class="ghost" type="button" id="reload">רענון</button>
+        <button class="ghost" type="button" id="logout">יציאה</button>
+      </div>
+    </div>
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+    <div class="list" id="list"></div>
+  </section>
+</main>
+<script>
+(function(){
+/* same Web App address as in index.html */
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbympOXtlvyJInugHep2MLqSNDLIlwgt6ulI6JMQZ5wr6sRZ2Yj1dJOQGWSRIIAxBjVp/exec';
+var $ = function(id){ return document.getElementById(id); };
+var pw = '', all = [], view = 'pending', thumbs = {};
+try { pw = sessionStorage.getItem('ttAdmin') || ''; } catch(e){}
+
+function post(body){
+  body.pw = pw;
+  return fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(body) }).then(function(r){ if (!r.ok) throw r.status; return r.json(); });
+}
+function say(t, bad){ var s = $('status'); s.textContent = t || ''; s.classList.toggle('err', !!bad); }
+function errText(r){
+  var e = r && r.error;
+  if (e === 'bad_password') return 'הסיסמה לא נכונה.';
+  if (e === 'no_password') return 'עוד לא הוגדרה סיסמת ניהול בסקריפט. ראו בהוראות ההקמה איך להגדיר ADMIN_PASSWORD.';
+  if (e === 'unknown_action') return 'הסקריפט בגיליון עוד לא עודכן לגרסה החדשה. הדביקו את הקוד החדש ופרסו גרסה חדשה.';
+  return 'משהו לא עבד. נסו שוב בעוד רגע.';
+}
+
+function load(){
+  say('טוענים...');
+  return post({ action: 'admin_list' }).then(function(r){
+    if (!r || !r.ok) throw r;
+    all = Array.isArray(r.spaces) ? r.spaces : [];
+    $('login').hidden = true; $('admin').hidden = false;
+    try { sessionStorage.setItem('ttAdmin', pw); } catch(e){}
+    render(); say('');
+  });
+}
+
+function render(){
+  var items = all.filter(function(s){ return view === 'pending' ? s.status === 'ממתין' : s.status !== 'ממתין'; });
+  var pend = all.filter(function(s){ return s.status === 'ממתין'; }).length;
+  $('tabPending').textContent = 'ממתינים לאישור (' + pend + ')';
+  $('tabApproved').textContent = 'מאושרים (' + (all.length - pend) + ')';
+  var list = $('list'); list.textContent = '';
+  if (!items.length){ var p = document.createElement('p'); p.className = 'empty'; p.textContent = view === 'pending' ? 'אין אירועים שמחכים לאישור.' : 'עוד אין אירועים מאושרים.'; list.appendChild(p); return; }
+  items.forEach(function(s){
+    var card = document.createElement('article'); card.className = 'card';
+    var img = document.createElement('img'); img.className = 'thumb'; img.alt = 'תמונת 360 של ' + (s.title || 'האירוע');
+    if (thumbs[s.id]) img.src = thumbs[s.id]; else queueThumb(s.id, img);
+    var box = document.createElement('div');
+    var h = document.createElement('h2'); h.textContent = s.title || 'בלי שם';
+    var meta = document.createElement('p'); meta.className = 'meta'; meta.textContent = [s.period, s.year].filter(Boolean).join(', ');
+    var desc = document.createElement('p'); desc.className = 'desc'; desc.textContent = s.desc || '';
+    var by = document.createElement('p'); by.className = 'by';
+    var d = s.date ? new Date(s.date) : null;
+    by.textContent = 'הועלה על ידי ' + (s.creator || 'לא ידוע') + (d && !isNaN(d) ? ', ' + d.toLocaleDateString('he-IL') : '');
+    var act = document.createElement('div'); act.className = 'actions';
+    if (s.status === 'ממתין'){
+      var ok = document.createElement('button'); ok.type = 'button'; ok.className = 'primary'; ok.textContent = 'אישור';
+      ok.addEventListener('click', function(){ act_(s, 'approve', ok); });
+      act.appendChild(ok);
+    }
+    var del = document.createElement('button'); del.type = 'button'; del.className = 'danger'; del.textContent = 'מחיקה';
+    del.addEventListener('click', function(){
+      if (!del.classList.contains('armed')){ del.classList.add('armed'); del.textContent = 'ללחוץ שוב כדי למחוק';
+        setTimeout(function(){ del.classList.remove('armed'); del.textContent = 'מחיקה'; }, 4000); return; }
+      act_(s, 'admin_delete', del);
+    });
+    act.appendChild(del);
+    [h, meta, desc, by, act].forEach(function(n){ box.appendChild(n); });
+    card.appendChild(img); card.appendChild(box); list.appendChild(card);
+  });
+}
+
+function act_(s, action, btn){
+  btn.disabled = true;
+  post({ action: action, id: s.id }).then(function(r){
+    if (!r || !r.ok) throw r;
+    if (action === 'approve') s.status = 'מאושר'; else all = all.filter(function(x){ return x.id !== s.id; });
+    render(); say(action === 'approve' ? 'האירוע אושר ויופיע במנהרה תוך כ-15 שניות.' : 'האירוע נמחק מהמנהרה.');
+  }).catch(function(r){ btn.disabled = false; say(errText(r), true); });
+}
+
+/* images load one at a time, small, so the page stays light */
+var q = [], busy = false;
+function queueThumb(id, img){ q.push({ id: id, img: img }); pump(); }
+function pump(){
+  if (busy || !q.length) return; busy = true;
+  var job = q.shift();
+  post({ action: 'image', id: job.id }).then(function(r){
+    if (!r || !r.ok) throw r;
+    var im = new Image();
+    im.onload = function(){
+      var c = document.createElement('canvas'); c.width = 520; c.height = 260;
+      c.getContext('2d').drawImage(im, 0, 0, 520, 260);
+      thumbs[job.id] = c.toDataURL('image/jpeg', .8); job.img.src = thumbs[job.id];
+      busy = false; pump();
+    };
+    im.onerror = function(){ busy = false; pump(); };
+    im.src = 'data:image/jpeg;base64,' + r.data;
+  }).catch(function(){ busy = false; pump(); });
+}
+
+$('login').addEventListener('submit', function(e){
+  e.preventDefault(); pw = $('pw').value; $('loginErr').hidden = true;
+  load().catch(function(r){ var le = $('loginErr'); le.textContent = errText(r); le.hidden = false; say(''); });
+});
+function setView(v){ view = v; $('tabPending').setAttribute('aria-pressed', v === 'pending'); $('tabApproved').setAttribute('aria-pressed', v !== 'pending'); render(); }
+$('tabPending').addEventListener('click', function(){ setView('pending'); });
+$('tabApproved').addEventListener('click', function(){ setView('approved'); });
+$('reload').addEventListener('click', function(){ load().catch(function(r){ say(errText(r), true); }); });
+$('logout').addEventListener('click', function(){ pw = ''; try { sessionStorage.removeItem('ttAdmin'); } catch(e){} $('admin').hidden = true; $('login').hidden = false; $('pw').value = ''; });
+if (pw) load().catch(function(){ pw = ''; $('login').hidden = false; $('admin').hidden = true; say(''); });
+})();
+</script>
+</body>
+</html>

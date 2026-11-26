@@ -476,7 +476,7 @@ function rebuildTiles(){
   tiles = []; hitList = [];
   var all = visibleItems().map(function(s){ return { kind: s.local ? 'local' : 'shared', item: s }; });
   var fc = $('filterCount');
-  if (query || periodSel) fc.textContent = all.length ? 'נמצאו ' + all.length + ' אירועים' : 'לא נמצאו אירועים. נסו מילה אחרת או תקופה אחרת.';
+  if (query || periodSel) fc.textContent = all.length === 1 ? 'נמצא אירוע אחד' : all.length ? 'נמצאו ' + all.length + ' אירועים' : 'לא נמצאו אירועים. נסו מילה אחרת או תקופה אחרת.';
   else fc.textContent = '';
   var per = SPACE_NICHES.length, pages = Math.max(1, Math.ceil(all.length/per)); if (page >= pages) page = 0;
   $('pager').hidden = pages < 2; pageCount = pages;
