@@ -49,6 +49,7 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(38px,6.5vw,72px);l
 /* the creator's credit, small, under the buttons of the space view */
 .credit{flex-basis:100%;margin:2px 0 0;text-align:center;direction:rtl;font-size:12px;line-height:1.7;color:var(--ink)}
 .credit span{display:inline-block;background:rgba(8,10,30,.62);border-radius:999px;padding:2px 14px;max-width:100%}
+.loader .credit{position:absolute;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);margin:0;font-family:var(--body);font-weight:400;font-size:12px;text-shadow:none;color:var(--ink)}
 .credit a{color:var(--gold-hi);text-decoration:none;border-bottom:1px solid currentColor}
 .credit a:hover,.credit a:focus-visible{opacity:1;outline:none;color:#fff}
 button{font-family:var(--body);font-size:17px;cursor:pointer}
@@ -153,6 +154,9 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
 
 <div class="bottom" id="entryBar">
   <button class="gold pulse" id="enterDoor" type="button">להיכנס בדלת הזהב</button>
+  <p class="credit"><span>יוצרת: שירה רוט זליקוביץ · הוראה יצירתית עם AI ·
+    <a href="https://wa.me/972523930628" target="_blank" rel="noopener">ווטסאפ</a> ·
+    <a href="https://www.lomdot.org/" target="_blank" rel="noopener">להזמנת סדנאות בינה מלאכותית</a></span></p>
 </div>
 <div class="bottom" id="galleryBar" hidden>
   <button class="ghost" id="exitTunnel" type="button">יציאה מהמנהרה</button>
@@ -249,6 +253,9 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
   </div>
   <p id="loaderText">חוזרים בזמן, כבר נכנסים...</p>
   <button class="gold pulse" id="loaderGo" type="button" hidden>כניסה למנהרת הזמן</button>
+  <p class="credit"><span>יוצרת: שירה רוט זליקוביץ · הוראה יצירתית עם AI ·
+    <a href="https://wa.me/972523930628" target="_blank" rel="noopener">ווטסאפ</a> ·
+    <a href="https://www.lomdot.org/" target="_blank" rel="noopener">להזמנת סדנאות בינה מלאכותית</a></span></p>
 </div>
 <div class="msg" id="nogl" hidden>הדפדפן הזה לא מצליח להציג תלת-ממד.<br>נסו לפתוח את הדף ב-Chrome או ב-Edge במחשב.</div>
 
