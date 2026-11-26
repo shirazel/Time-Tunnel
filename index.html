@@ -90,6 +90,19 @@ input[type=text]{font-family:var(--body);font-size:17px;padding:11px 18px;border
 input[type=text]::placeholder,textarea::placeholder{color:var(--mute)}
 textarea{font-family:var(--body);font-size:16px;padding:10px 16px;border-radius:16px;border:1px solid rgba(232,185,74,.6);background:rgba(20,14,6,.75);color:var(--ink);resize:vertical;box-shadow:inset 0 2px 6px rgba(0,0,0,.6)}
 .promptCard{z-index:5}
+select{font-family:var(--body);font-size:17px;padding:10px 16px;border-radius:999px;border:1px solid rgba(232,185,74,.6);background:rgba(20,14,6,.92);color:var(--ink);box-shadow:inset 0 2px 6px rgba(0,0,0,.6)}
+select:focus-visible,textarea:focus-visible{outline:2px solid var(--gold-hi);outline-offset:3px}
+input[type=search]{font-family:var(--body);font-size:16px;padding:10px 18px;border-radius:999px;border:1px solid rgba(232,185,74,.6);background:rgba(14,10,4,.85);color:var(--ink);box-shadow:0 6px 24px rgba(0,0,0,.5);min-width:0}
+/* search and period filter float at the top of the tunnel */
+.filterBar{position:fixed;top:0;left:0;right:0;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;z-index:5;pointer-events:none;
+  padding:calc(env(safe-area-inset-top,0px) + 16px) max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
+.filterBar > *{pointer-events:auto}
+.filterBar input[type=search]{width:min(320px,calc(100vw - 32px))}
+.filterBar select{background:rgba(14,10,4,.85);box-shadow:0 6px 24px rgba(0,0,0,.5);font-size:16px}
+.filterCount{flex-basis:100%;margin:0;text-align:center;font-size:14px;color:var(--ink);text-shadow:0 1px 4px #000;pointer-events:none}
+.spaceMeta{margin:8px 0 0;font-family:var(--display);font-weight:700;font-size:clamp(14px,1.7vw,18px);color:var(--gold-hi);text-shadow:0 1px 4px #000,0 0 10px rgba(0,0,0,.8)}
+.spaceDesc{margin:6px auto 0;max-width:36em;font-size:clamp(14px,1.6vw,17px);line-height:1.45;color:var(--ink);text-shadow:0 1px 4px #000,0 0 10px rgba(0,0,0,.9);text-wrap:balance}
+.pendingBadge{display:inline-block;margin-top:8px;font-size:14px;font-weight:700;color:#3a2200;background:var(--gold-hi);border-radius:999px;padding:4px 12px}
 #copyPrompt{align-self:center;min-width:200px}
 .pfFallback{direction:ltr;font-size:12px;min-height:90px}
 .drop{border:1px dashed rgba(232,185,74,.6);border-radius:14px;padding:clamp(8px,1.6vh,16px) 12px;text-align:center;display:grid;gap:12px;justify-items:center;cursor:pointer;transition:background .2s}
@@ -131,7 +144,12 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
   <h1>מנהרת הזמן</h1>
   <p class="sub" id="topSub">גררו כדי להסתכל סביב. בקצה ההיכל מחכה לכם דלת הזהב.</p>
 </div>
-<div class="top" id="spaceTop" hidden><p class="spaceTitle" id="spaceName"></p><p class="spaceBy" id="spaceBy" hidden></p></div>
+<div class="top" id="spaceTop" hidden><p class="spaceTitle" id="spaceName"></p><p class="spaceMeta" id="spaceMeta" hidden></p><p class="spaceDesc" id="spaceDesc" hidden></p><p class="spaceBy" id="spaceBy" hidden></p><span class="pendingBadge" id="spacePending" hidden>ממתין לאישור. רק אתם רואים אותו כרגע.</span></div>
+<div class="filterBar" id="filterBar" hidden role="search">
+  <input type="search" id="search" placeholder="חיפוש אירוע, שנה או שם" aria-label="חיפוש אירועים">
+  <select id="periodFilter" aria-label="סינון לפי תקופה"><option value="">כל התקופות</option></select>
+  <p class="filterCount" id="filterCount" aria-live="polite"></p>
+</div>
 
 <div class="bottom" id="entryBar">
   <button class="gold pulse" id="enterDoor" type="button">להיכנס בדלת הזהב</button>
@@ -143,13 +161,13 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
     <span class="pagerSign" id="pageSign" aria-live="polite"></span>
     <button class="ghost" id="nextPage" type="button" aria-label="המרחבים הבאים">הבאים</button>
   </div>
-  <button class="gold" id="addSpace" type="button">הוספת מרחב</button>
+  <button class="gold" id="addSpace" type="button">הוספת אירוע</button>
 </div>
 <div class="bottom" id="spaceBar" hidden>
   <button class="ghost" id="backTunnel" type="button">חזרה למנהרה</button>
   <button class="ghost" id="spin" type="button" aria-pressed="true">סיבוב אוטומטי</button>
   <button class="ghost" id="full" type="button">מסך מלא</button>
-  <button class="ghost warn" id="removeSpace" type="button" hidden>הסרת המרחב</button>
+  <button class="ghost warn" id="removeSpace" type="button" hidden>מחיקת האירוע שלי</button>
 </div>
 <div class="tip" id="tip" hidden></div>
 <div class="tileLabel" id="tileLabel" hidden></div>
@@ -161,10 +179,19 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
 <div class="panel" id="panel" hidden>
   <div class="card" id="note" role="dialog" aria-labelledby="pTitle" hidden>
     <button class="noteClose" id="noteClose" type="button">סגירה</button>
-    <h2 id="pTitle">מרחב זמן חדש</h2>
-    <p>העלו תמונת 360, והיא תהפוך לאריח זהב על קיר המנהרה.</p>
-    <label for="spaceTitle">שם המרחב
+    <h2 id="pTitle">אירוע היסטורי חדש</h2>
+    <p>העלו תמונת 360 של האירוע. אחרי אישור הוא יהפוך לאריח זהב על קיר המנהרה.</p>
+    <label for="spaceTitle">שם האירוע
       <input type="text" id="spaceTitle" maxlength="40" required aria-required="true">
+    </label>
+    <label for="spacePeriod">תקופה
+      <select id="spacePeriod" required aria-required="true"><option value="">בחרו תקופה</option></select>
+    </label>
+    <label for="spaceYear">שנה או תקופה מדויקת
+      <input type="text" id="spaceYear" maxlength="30" required aria-required="true" placeholder="למשל: 1948, או המאה ה-12">
+    </label>
+    <label for="spaceDescIn">תיאור קצר
+      <textarea id="spaceDescIn" rows="2" maxlength="300" required aria-required="true"></textarea>
     </label>
     <label for="creatorName">השם שלכם
       <input type="text" id="creatorName" maxlength="30" required aria-required="true" autocomplete="name">
@@ -174,7 +201,7 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
       <div class="small">אפשר גם לגרור לכאן תמונה או להדביק אותה (Ctrl+V). כל גודל ויחס תמונה.</div>
       <img class="preview" id="preview" alt="התמונה שנבחרה" hidden>
     </div>
-    <button class="gold" id="saveSpace" type="button" disabled>שמירת המרחב</button>
+    <button class="gold" id="saveSpace" type="button" disabled>שליחה לאישור</button>
     <div class="busy" id="busy" role="status" hidden></div>
     <p class="saveNote" id="saveNote"></p>
     <p class="err" id="err" hidden></p>
@@ -241,7 +268,9 @@ var yaw = 0, pitch = 0, tYaw = 0, tPitch = 0, fov = 72, autoSpin = false;
 var camZ = 1.2, tCamZ = 1.2, anim = null;
 var wallTex, sparks, exitDoor;
 var tiles = [], hitList = [], plusTile = null, hoverTile = null, openTile = null, galleryPose = null;
-var shared = [], local = [], current = null;
+var shared = [], local = [], mine = [], current = null;
+var PERIODS = ['תנ"ך', 'בית שני וחז"ל', 'ימי הביניים', 'העת החדשה', 'ציונות והתיישבות', 'מדינת ישראל', 'היסטוריה כללית'];
+var query = '', periodSel = '', mineSig = '';
 var canShare = !!SCRIPT_URL, sharedLoaded = false, listSig = '';
 var tipTimer = null;
 var PANO_ROT = -Math.PI/2;          // puts the middle of a 2:1 image straight ahead
@@ -429,10 +458,26 @@ function makeTile(kind, item){
   g.userData = { kind: kind, item: item, pivot: pivot, hinge: hinge, face: face, glow: glowPlane, rim: rim, hover: 0, open: 0 };
   return g;
 }
+/* what the tunnel shows: approved events, plus your own events still waiting for approval, filtered by search and period */
+function norm(t){ return String(t || '').toLowerCase().replace(/["'\u05f4\u05f3]/g, ''); }
+function matches(s){
+  if (periodSel && s.period !== periodSel) return false;
+  if (!query) return true;
+  var hay = norm([s.title, s.creator, s.year, s.desc, s.period].join(' '));
+  return norm(query).split(/\s+/).filter(Boolean).every(function(w){ return hay.indexOf(w) >= 0; });
+}
+function visibleItems(){
+  var ids = {}; shared.forEach(function(s){ ids[s.id] = 1; });
+  var own = mine.filter(function(s){ return s.pending && !ids[s.id]; });
+  return own.concat(shared, local.map(function(s){ s.local = true; return s; })).filter(matches);
+}
 function rebuildTiles(){
   tiles.forEach(function(t){ galleryScene.remove(t); t.userData.face.map.dispose(); t.userData.face.dispose(); });
   tiles = []; hitList = [];
-  var all = shared.map(function(s){ return { kind: 'shared', item: s }; }).concat(local.map(function(s){ return { kind: 'local', item: s }; }));
+  var all = visibleItems().map(function(s){ return { kind: s.local ? 'local' : 'shared', item: s }; });
+  var fc = $('filterCount');
+  if (query || periodSel) fc.textContent = all.length ? 'נמצאו ' + all.length + ' אירועים' : 'לא נמצאו אירועים. נסו מילה אחרת או תקופה אחרת.';
+  else fc.textContent = '';
   var per = SPACE_NICHES.length, pages = Math.max(1, Math.ceil(all.length/per)); if (page >= pages) page = 0;
   $('pager').hidden = pages < 2; pageCount = pages;
   $('pageSign').textContent = 'אגף ' + (page + 1) + ' מתוך ' + pages;
@@ -464,7 +509,7 @@ function ease(v){ v = Math.max(0, Math.min(1, v)); return v < .5 ? 2*v*v : 1 - M
 function wrapAngle(a){ return a - Math.round(a/TAU)*TAU; }
 function setFov(v){ fov = Math.max(30, Math.min(90, v)); camera.fov = fov; camera.updateProjectionMatrix(); }
 function flashTo(v, ms){ var el = $('flash'); el.style.transition = 'opacity ' + (ms || 900) + 'ms'; el.style.opacity = v; }
-function showOnly(bar){ ['entryBar','galleryBar','spaceBar','gateBar'].forEach(function(id){ $(id).hidden = id !== bar; }); }
+function showOnly(bar){ ['entryBar','galleryBar','spaceBar','gateBar'].forEach(function(id){ $(id).hidden = id !== bar; }); $('filterBar').hidden = bar !== 'galleryBar' || !canShare; }
 function tip(text, ms){ var el = $('tip'); el.textContent = text; el.hidden = false; el.style.opacity = 1; clearTimeout(tipTimer);
   tipTimer = setTimeout(function(){ el.style.opacity = 0; }, ms || 5500); }
 
@@ -549,7 +594,8 @@ function ensureCanvas(item){
   if (item.canvas) return Promise.resolve(item.canvas);
   if (loadingById[item.id]) item.loading = loadingById[item.id];
   if (!item.loading){
-    item.loading = getJSON(SCRIPT_URL + '?action=image&id=' + encodeURIComponent(item.id))
+    var req = item.pending ? postJSON({ action: 'image', id: item.id, key: myKeys()[item.id] || '' }) : getJSON(SCRIPT_URL + '?action=image&id=' + encodeURIComponent(item.id));
+    item.loading = req
       .then(function(r){ if (!r || !r.ok || !r.data) throw 0; return loadImage('data:image/jpeg;base64,' + r.data); })
       .then(function(im){ item.canvas = canvasCache[item.id] = toPanoCanvas(im, false); delete loadingById[item.id]; return item.canvas; });
     loadingById[item.id] = item.loading;
@@ -639,9 +685,13 @@ function openSpace(item, isShared){
   $('altarBtn').hidden = true; $('toFrame').hidden = true;
   current = { item: item, shared: isShared };
   $('spaceName').textContent = item.title || '';
-  $('spaceBy').textContent = item.creator ? 'נוצר על ידי ' + item.creator : ''; $('spaceBy').hidden = !item.creator;
+  $('spaceBy').textContent = item.creator ? 'הועלה על ידי ' + item.creator : ''; $('spaceBy').hidden = !item.creator;
+  var meta = [item.period, item.year].filter(Boolean).join(', ');
+  $('spaceMeta').textContent = meta; $('spaceMeta').hidden = !meta;
+  $('spaceDesc').textContent = item.desc || ''; $('spaceDesc').hidden = !item.desc;
+  $('spacePending').hidden = !item.pending;
   $('spaceTop').hidden = !item.title; $('busy').hidden = true;
-  removeArmed = false; var rm = $('removeSpace'); rm.classList.remove('armed'); rm.textContent = 'הסרת המרחב';
+  removeArmed = false; var rm = $('removeSpace'); rm.classList.remove('armed'); rm.textContent = 'מחיקת האירוע שלי';
   rm.hidden = isShared && !myKeys()[item.id];
   var show = function(c){
     if (spaceMesh){ spaceScene.remove(spaceMesh); disposeMesh(spaceMesh); }
@@ -669,7 +719,7 @@ function showGate(){
   var rm = roomMesh.material; rm.opacity = 1; rm.transparent = false;
   yaw = tYaw = 0; pitch = tPitch = 0; resetNote();
   state = 'gate'; $('panel').hidden = false; $('note').hidden = true; noteOpen = false; showOnly('gateBar'); placeNote(); $('err').hidden = true; $('busy').hidden = true; $('spaceTop').hidden = true;
-  $('saveNote').textContent = canShare ? 'המרחב יישמר במנהרה לכל מי שנכנס לקישור.' : 'המרחב יישמר רק במחשב שלכם, עד שתסגרו את הדף.';
+  $('saveNote').textContent = canShare ? 'האירוע יופיע במנהרה לכולם אחרי אישור. עד אז רק אתם תראו אותו, ותוכלו למחוק אותו מהדפדפן הזה.' : 'האירוע יישמר רק במחשב שלכם, עד שתסגרו את הדף.';
   flashTo(0, 900); setTimeout(function(){ try { $('spaceTitle').focus({ preventScroll: true }); } catch(e){} }, 60);
   tip('לחצו על "הכניסו מרחב". אפשר גם לגרור ולהסתובב בחדר.', 6000);
 }
@@ -685,7 +735,7 @@ function takeFile(f){
   $('pick').textContent = 'החלפת תמונה';
   updateSaveButton();
 }
-function updateSaveButton(){ $('saveSpace').disabled = saving || !pendingFile || !$('spaceTitle').value.trim() || !$('creatorName').value.trim(); }
+function updateSaveButton(){ $('saveSpace').disabled = saving || !pendingFile || !$('spaceTitle').value.trim() || !$('creatorName').value.trim() || !$('spacePeriod').value || !$('spaceYear').value.trim() || !$('spaceDescIn').value.trim(); }
 function resetNote(){
   pendingFile = null; saving = false; var pv = $('preview'); if (pv.src) URL.revokeObjectURL(pv.src); pv.removeAttribute('src'); pv.hidden = true;
   $('pick').textContent = 'בחירת תמונה'; $('busy').hidden = true; updateSaveButton();
@@ -695,68 +745,91 @@ function saveSpace(){
   if (!title){ showError('כתבו שם למרחב. השם יופיע על האריח ובתוך המרחב.'); try { $('spaceTitle').focus(); } catch(e){} return; }
   var creator = $('creatorName').value.trim().slice(0, 30);
   if (!creator){ showError('כתבו את השם שלכם. הוא יופיע בתוך המרחב.'); try { $('creatorName').focus(); } catch(e){} return; }
-  if (!pendingFile){ showError('בחרו תמונה למרחב.'); return; }
+  var period = $('spacePeriod').value, year = $('spaceYear').value.trim().slice(0, 30), desc = $('spaceDescIn').value.trim().slice(0, 300);
+  if (!period){ showError('בחרו תקופה לאירוע.'); try { $('spacePeriod').focus(); } catch(e){} return; }
+  if (!year){ showError('כתבו שנה או תקופה מדויקת.'); try { $('spaceYear').focus(); } catch(e){} return; }
+  if (!desc){ showError('כתבו תיאור קצר של האירוע.'); try { $('spaceDescIn').focus(); } catch(e){} return; }
+  if (!pendingFile){ showError('בחרו תמונה לאירוע.'); return; }
   saving = true; updateSaveButton(); $('err').hidden = true;
-  var busy = $('busy'); busy.textContent = 'שומרים את המרחב...'; busy.hidden = false;
+  var busy = $('busy'); busy.textContent = 'שולחים את האירוע...'; busy.hidden = false;
   var url = URL.createObjectURL(pendingFile);
   var done = function(it, isShared, note){
-    busy.textContent = isShared ? 'המרחב נשמר!' : 'המרחב נשמר במחשב שלכם.';
+    busy.textContent = isShared ? 'האירוע נשלח לאישור!' : 'האירוע נשמר במחשב שלכם.';
     setTimeout(function(){ resetNote(); afterAdd(it, isShared); if (note) tip(note, 8000); }, 900);
   };
   loadImage(url).then(function(im){
     URL.revokeObjectURL(url);
     var c = toPanoCanvas(im, true);
-    if (!canShare){ var it = { title: title, creator: creator, canvas: c, id: 'l' + Date.now() }; local.push(it); rebuildTiles(); done(it, false); return; }
-    busy.textContent = 'שומרים את המרחב במנהרה... זה לוקח כמה שניות';
+    if (!canShare){ var it = { title: title, creator: creator, period: period, year: year, desc: desc, canvas: c, id: 'l' + Date.now() }; local.push(it); rebuildTiles(); done(it, false); return; }
+    busy.textContent = 'שולחים את האירוע לאישור... זה לוקח כמה שניות';
     var send = c.width > 4096 ? shrink(c, 4096) : c, data = send.toDataURL('image/jpeg', .85).split(',')[1];
-    fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ title: title, creator: creator, data: data }) })
+    fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ title: title, creator: creator, period: period, year: year, desc: desc, data: data }) })
       .then(function(r){ return r.json(); })
       .then(function(r){
         if (!r || !r.ok) throw r;
-        var it = { id: String(r.id), title: title, creator: creator, canvas: c }; canvasCache[it.id] = c;
+        var it = { id: String(r.id), title: title, creator: creator, period: period, year: year, desc: desc, pending: r.status === 'ממתין', canvas: c }; canvasCache[it.id] = c;
         if (r.key) setKey(it.id, String(r.key));
-        shared.unshift(it); listSig = ''; rebuildTiles(); done(it, true);
+        if (it.pending){ mine.unshift(it); mineSig = ''; } else { shared.unshift(it); listSig = ''; }
+        rebuildTiles(); done(it, true, it.pending ? 'האירוע נשלח לאישור. אחרי האישור כולם יראו אותו במנהרה.' : '');
       }).catch(function(){
-        var it = { title: title, creator: creator, canvas: c, id: 'l' + Date.now() }; local.push(it); rebuildTiles();
-        done(it, false, 'השמירה במנהרה המשותפת נכשלה. המרחב נשמר רק אצלכם.');
+        var it = { title: title, creator: creator, period: period, year: year, desc: desc, canvas: c, id: 'l' + Date.now() }; local.push(it); rebuildTiles();
+        done(it, false, 'השליחה נכשלה. האירוע נשמר רק אצלכם, עד שתסגרו את הדף.');
       });
   }).catch(function(){ URL.revokeObjectURL(url); saving = false; updateSaveButton(); busy.hidden = true; showError('לא הצלחנו לפתוח את התמונה. שמרו אותה מחדש כ-JPG או PNG ונסו שוב.'); });
 }
 function afterAdd(item, isShared){
-  $('spaceTitle').value = ''; closeOpenTile();
+  $('spaceTitle').value = ''; $('spaceYear').value = ''; $('spaceDescIn').value = ''; $('spacePeriod').value = ''; closeOpenTile();
   openSpace(item, isShared);
 }
 function removeCurrent(){
   var rm = $('removeSpace');
-  if (!removeArmed){ removeArmed = true; rm.classList.add('armed'); rm.textContent = 'ללחוץ שוב כדי להסיר'; setTimeout(function(){ removeArmed = false; rm.classList.remove('armed'); rm.textContent = 'הסרת המרחב'; }, 4000); return; }
+  if (!removeArmed){ removeArmed = true; rm.classList.add('armed'); rm.textContent = 'ללחוץ שוב כדי למחוק'; setTimeout(function(){ removeArmed = false; rm.classList.remove('armed'); rm.textContent = 'מחיקת האירוע שלי'; }, 4000); return; }
   var c = current; if (!c) return;
-  if (!c.shared){ local = local.filter(function(s){ return s !== c.item; }); rebuildTiles(); backToGallery(); return; }
+  if (!c.shared && !c.item.pending){ local = local.filter(function(s){ return s !== c.item; }); rebuildTiles(); backToGallery(); return; }
   var key = myKeys()[c.item.id]; if (!key) return;
-  rm.disabled = true; rm.textContent = 'מסירים...';
+  rm.disabled = true; rm.textContent = 'מוחקים...';
   fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'remove', id: c.item.id, key: key }) })
     .then(function(r){ return r.json(); })
     .then(function(r){
       if (!r || !r.ok) throw r;
       setKey(c.item.id, null);
       shared = shared.filter(function(s){ return s.id !== c.item.id; }); listSig = '';
-      backToGallery(); rebuildTiles(); tip('המרחב הוסר מהאולם.', 5000);
+      mine = mine.filter(function(s){ return s.id !== c.item.id; }); mineSig = '';
+      backToGallery(); rebuildTiles(); tip('האירוע נמחק.', 5000);
     })
-    .catch(function(){ tip('ההסרה לא הצליחה. נסו שוב בעוד רגע.', 6000); })
-    .then(function(){ rm.disabled = false; removeArmed = false; rm.classList.remove('armed'); rm.textContent = 'הסרת המרחב'; });
+    .catch(function(){ tip('המחיקה לא הצליחה. נסו שוב בעוד רגע.', 6000); })
+    .then(function(){ rm.disabled = false; removeArmed = false; rm.classList.remove('armed'); rm.textContent = 'מחיקת האירוע שלי'; });
 }
 function shrink(c, W){ var o = canvas(W, W/2); o.getContext('2d').drawImage(c, 0, 0, W, W/2); return o; }
 
 /* ================= shared tunnel (Google Sheet through Apps Script) ================= */
 function getJSON(url){ return fetch(url).then(function(r){ if (!r.ok) throw r.status; return r.json(); }); }
+function postJSON(body){ return fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(body) }).then(function(r){ if (!r.ok) throw r.status; return r.json(); }); }
+function toItem(s, old){ var it = { id: String(s.id), title: String(s.title || '').slice(0, 60), creator: String(s.creator || '').slice(0, 40),
+  period: String(s.period || ''), year: String(s.year || '').slice(0, 30), desc: String(s.desc || '').slice(0, 300), pending: s.status === 'ממתין' };
+  if (old && old.canvas) it.canvas = old.canvas; return it; }
+/* your own events (also the ones waiting for approval), found by the removal keys kept in this browser */
+function refreshMine(){
+  var keys = myKeys(), items = Object.keys(keys).map(function(id){ return { id: id, key: keys[id] }; });
+  if (!SCRIPT_URL || !items.length) return;
+  postJSON({ action: 'mine', items: items }).then(function(r){
+    if (!r || !r.ok || !Array.isArray(r.spaces)) return;
+    var old = {}; mine.forEach(function(s){ old[s.id] = s; });
+    var next = r.spaces.map(function(s){ return toItem(s, old[String(s.id)]); });
+    var sig = next.map(function(s){ return s.id + (s.pending ? 'p' : 'a'); }).join('|');
+    if (sig === mineSig) return; mineSig = sig; mine = next;
+    if (galleryScene && state !== 'toSpace') rebuildTiles();
+  }).catch(function(){});
+}
 function refreshShared(){
   if (!SCRIPT_URL) return;
+  refreshMine();
   getJSON(SCRIPT_URL + '?action=list').then(function(r){
     if (!r || !r.ok || !Array.isArray(r.spaces)) return;
     sharedLoaded = true;
     var old = {}; shared.forEach(function(s){ old[s.id] = s; });
-    var next = r.spaces.map(function(s){ var it = { id: String(s.id), title: String(s.title || '').slice(0, 40), creator: String(s.creator || '').slice(0, 30) };
-      if (old[it.id] && old[it.id].canvas) it.canvas = old[it.id].canvas; return it; });
-    var sig = next.map(function(s){ return s.id + ':' + s.title + ':' + s.creator; }).join('|');
+    var next = r.spaces.map(function(s){ return toItem(s, old[String(s.id)]); });
+    var sig = next.map(function(s){ return s.id + ':' + s.title + ':' + s.creator + ':' + s.period + ':' + s.year; }).join('|');
     if (sig === listSig) return; listSig = sig; shared = next;
     if (galleryScene && state !== 'toSpace') rebuildTiles();
     prefetchRooms();
@@ -765,7 +838,7 @@ function refreshShared(){
 var prefetching = false;
 function prefetchRooms(){
   if (prefetching || !SCRIPT_URL) return;
-  var per = SPACE_NICHES.length, onPage = shared.concat(local).slice(page*per, page*per + per);
+  var per = SPACE_NICHES.length, onPage = visibleItems().slice(page*per, page*per + per);
   var next = onPage.filter(function(s){ return s.id && s.id.charAt(0) !== 'l' && !s.canvas && !canvasCache[s.id]; })[0];
   if (!next) return;
   prefetching = true;
@@ -805,7 +878,7 @@ function bindControls(){
     else if (state === 'gallery'){ var h = hitGallery(e); hoverTile = h && h !== 'exit' ? h : null; cv.classList.toggle('hover', !!h);
       if (hoverTile && hoverTile.userData.kind === 'shared') ensureCanvas(hoverTile.userData.item).catch(function(){});
       var lab = $('tileLabel'); lab.hidden = !hoverTile;
-      if (hoverTile){ lab.textContent = hoverTile.userData.kind === 'plus' ? 'הוספת מרחב' : ((hoverTile.userData.item.title || 'מרחב זמן') + (hoverTile.userData.item.creator ? ', מאת ' + hoverTile.userData.item.creator : '')); lab.style.left = e.clientX + 'px'; lab.style.top = e.clientY + 'px'; } }
+      if (hoverTile){ lab.textContent = hoverTile.userData.kind === 'plus' ? 'הוספת אירוע' : ((hoverTile.userData.item.title || 'אירוע') + (hoverTile.userData.item.year ? ', ' + hoverTile.userData.item.year : '') + (hoverTile.userData.item.pending ? ' (ממתין לאישור)' : '')); lab.style.left = e.clientX + 'px'; lab.style.top = e.clientY + 'px'; } }
   });
   var up = function(e){
     delete pts[e.pointerId]; if (pinch){ if (Object.keys(pts).length < 2) pinch = null; return; }
@@ -819,7 +892,7 @@ function bindControls(){
   cv.addEventListener('wheel', function(e){ e.preventDefault();
     if (canLook() && state !== 'gate') setFov(fov + e.deltaY*.03); }, { passive: false });
   window.addEventListener('keydown', function(e){
-    if (!canLook() || (e.target && e.target.tagName === 'INPUT')) return;
+    if (!canLook() || (e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName))) return;
     if (e.key === 'ArrowLeft') tYaw += .25; if (e.key === 'ArrowRight') tYaw -= .25;
     if (e.key === 'ArrowUp') tPitch = Math.min(pitchMax(), tPitch + .12); if (e.key === 'ArrowDown') tPitch = Math.max(-pitchMax(), tPitch - .12);
   });
@@ -846,6 +919,13 @@ function bindUI(){
   var drop = $('drop'), file = $('file');
   var pickFile = function(){ if (saving) return; $('err').hidden = true; file.click(); };
   $('saveSpace').addEventListener('click', saveSpace);
+  [$('spacePeriod'), $('periodFilter')].forEach(function(sel){ PERIODS.forEach(function(p){ var o = document.createElement('option'); o.value = p; o.textContent = p; sel.appendChild(o); }); });
+  $('spacePeriod').addEventListener('change', updateSaveButton);
+  $('spaceYear').addEventListener('input', updateSaveButton);
+  $('spaceDescIn').addEventListener('input', updateSaveButton);
+  var applyFilter = function(){ query = $('search').value.trim(); periodSel = $('periodFilter').value; page = 0; if (galleryScene && state === 'gallery'){ rebuildTiles(); prefetchRooms(); tiles.forEach(function(t){ t.userData.appear = 0; }); } };
+  var ft = null; $('search').addEventListener('input', function(){ clearTimeout(ft); ft = setTimeout(applyFilter, 250); });
+  $('periodFilter').addEventListener('change', applyFilter);
   $('spaceTitle').addEventListener('input', updateSaveButton);
   $('creatorName').addEventListener('input', updateSaveButton);
   drop.addEventListener('click', pickFile);
