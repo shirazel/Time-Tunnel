@@ -63,11 +63,6 @@ button:focus-visible,.drop:focus-visible,summary:focus-visible,input:focus-visib
 @keyframes pulse{50%{filter:drop-shadow(0 0 14px rgba(255,214,120,.85)) brightness(1.08)}}
 .tip{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 92px);left:50%;transform:translateX(-50%);font-size:15px;color:var(--ink);
   background:rgba(8,10,30,.66);border:1px solid rgba(185,178,214,.25);border-radius:999px;padding:7px 16px;max-width:calc(100% - 32px);box-sizing:border-box;text-align:center;transition:opacity 1s;pointer-events:none;z-index:5}
-.iris{position:fixed;inset:0;pointer-events:none;z-index:6;--r:3000px;--s:0px;
-  background:radial-gradient(circle at 50% 50%,rgba(255,244,214,0) calc(var(--r) - 1px),rgba(255,244,214,.95) calc(var(--r) + 2px),rgba(232,185,74,.75) calc(var(--r) + 10px),rgba(232,185,74,0) calc(var(--r) + 48px)),
-    repeating-radial-gradient(circle at 50% 50%,rgba(232,185,74,0) var(--s),rgba(232,185,74,.2) calc(var(--s) + 3px),rgba(232,185,74,0) calc(var(--s) + 7px),rgba(232,185,74,0) calc(var(--s) + 54px)),
-    radial-gradient(circle at 50% 50%,#0c0e26 0,#060817 70%);
-  -webkit-mask-image:radial-gradient(circle at 50% 50%,transparent calc(var(--r) - 1px),#000 var(--r));mask-image:radial-gradient(circle at 50% 50%,transparent calc(var(--r) - 1px),#000 var(--r))}
 .flash{position:fixed;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 50%,#ffffff 0,#fff6dc 30%,#ffd98a 65%,#d9a040 100%)}
 .panel{position:fixed;inset:0;pointer-events:none;animation:panelIn .9s ease .15s both}
 .panel .card{pointer-events:auto}
@@ -173,7 +168,6 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
 <div class="tileLabel" id="tileLabel" hidden></div>
 
 <div class="flash" id="flash"></div>
-<div class="iris" id="iris" hidden></div>
 <div class="arrival" id="arrival" hidden><span>נכנסים אל</span><strong id="arrivalName"></strong></div>
 
 <div class="panel" id="panel" hidden>
@@ -603,17 +597,6 @@ function ensureCanvas(item){
   }
   return item.loading;
 }
-/* the golden light tunnel: a ring of gold closes onto the handle, then opens from it into the space */
-var iris = null, irisPending = false;
-function irisMax(){ return Math.hypot(innerWidth, innerHeight)/2 + 60; }
-function irisSet(r, t){ var el = $('iris'); el.hidden = false; el.style.setProperty('--r', Math.max(0, r).toFixed(1) + 'px'); el.style.setProperty('--s', ((t*150) % 54).toFixed(1) + 'px'); }
-function irisHide(){ iris = null; irisPending = false; $('iris').hidden = true; }
-function runIris(dt){
-  iris.t += dt; var k = Math.min(1, iris.t/iris.dur), e = ease(k);
-  irisSet(irisMax()*e, iris.t + 1);
-  if (state === 'space') setFov(86 - 14*e);
-  if (k >= 1){ irisHide(); if (state === 'space') setFov(72); }
-}
 function openTileAnim(t){
   if (state !== 'gallery') return;
   // a door opens onto its room: fetch the room first, so the opening shows it
@@ -632,8 +615,8 @@ function openTileAnim(t){
   $('tileLabel').hidden = true;
   openTile = t; state = 'toSpace'; showOnly(null); $('gl').classList.remove('hover'); $('tip').hidden = true;
   var n = new THREE.Vector3(-p.x, 0, 0).normalize();
-  var tunnel = !reduce && tu.kind !== 'plus';
-  anim = { t: 0, dur: reduce ? .01 : tunnel ? .75 : 1.7, tunnel: tunnel, fov0: fov, tile: t, yaw0: yaw, pitch0: pitch, yaw1: targetYaw, pitch1: targetPitch,
+  var soft = !reduce && tu.kind !== 'plus';
+  anim = { t: 0, dur: reduce ? .01 : soft ? .8 : 1.7, soft: soft, fov0: fov, tile: t, yaw0: yaw, pitch0: pitch, yaw1: targetYaw, pitch1: targetPitch,
     from: new THREE.Vector3(0, 1.6, 0), to: new THREE.Vector3(0, 1.6, 0).lerp(p, .18) };
 }
 function runAnim(dt){
@@ -646,14 +629,14 @@ function runAnim(dt){
     if (k >= 1){ anim = null; arriveGallery(); }
   } else if (state === 'reveal'){
     a.mix = ease(k); if (k >= 1){ anim = null; a.done(); }
-  } else if (state === 'toSpace' && a.tunnel){
+  } else if (state === 'toSpace' && a.soft){
+    // a soft merge: the eye turns gently to the tile, it opens a little and glows, then the space dissolves in over the tunnel
     var tt = a.tile, uu = tt.userData, kk = Math.min(1, k), ek = ease(kk);
-    yaw = tYaw = a.yaw0 + (a.yaw1 - a.yaw0)*ease(kk*1.6); pitch = tPitch = a.pitch0 + (a.pitch1 - a.pitch0)*ease(kk*1.6);
-    setFov(a.fov0 + (30 - a.fov0)*ek);
-    if (uu.hinge) uu.hinge.rotation.x = -1.3*ek;
-    if (uu.halo){ uu.halo.material.opacity = .25 + .75*ek; var hs2 = TILE*(1.8 + 1.6*ek); uu.halo.scale.set(hs2, hs2, 1); }
-    var c = ease((kk - .2)/.8); irisSet(irisMax()*(1 - c), a.t);
-    if (k >= 1){ anim = null; irisSet(0, a.t); irisPending = true; openSpace(uu.item, uu.kind === 'shared'); }
+    yaw = tYaw = a.yaw0 + (a.yaw1 - a.yaw0)*ek; pitch = tPitch = a.pitch0 + (a.pitch1 - a.pitch0)*ek;
+    setFov(a.fov0 + (a.fov0*.8 - a.fov0)*ek);
+    if (uu.hinge) uu.hinge.rotation.x = -.5*ek;
+    if (uu.halo){ uu.halo.material.opacity = .25 + .5*ek; var hs2 = TILE*(1.8 + .8*ek); uu.halo.scale.set(hs2, hs2, 1); }
+    if (k >= 1){ anim = null; openSpace(uu.item, uu.kind === 'shared'); }
   } else if (state === 'toSpace'){
     var t = a.tile, u = t.userData;
     yaw = tYaw = a.yaw0 + (a.yaw1 - a.yaw0)*ease(k*1.8); pitch = tPitch = a.pitch0 + (a.pitch1 - a.pitch0)*ease(k*1.8);
@@ -671,7 +654,7 @@ function closeOpenTile(){
   if (!openTile) return; var u = openTile.userData; u.pivot.rotation.y = 0; u.open = 0; u.glow.visible = false; if (u.halo){ u.halo.material.opacity = 0; u.halo.scale.set(TILE*1.8, TILE*1.8, 1); } if (u.hinge) u.hinge.rotation.x = 0; openTile = null;
 }
 function backToGallery(){
-  irisHide(); $('arrival').hidden = true;
+  $('arrival').hidden = true;
   $('altarBtn').hidden = true; $('toFrame').hidden = true; closeNote();
   closeOpenTile(); state = 'gallery'; $('panel').hidden = true; $('spaceTop').hidden = true; $('tip').hidden = true;
   var p = galleryPose || { z: 1.2, yaw: 0, pitch: 0 };
@@ -698,7 +681,7 @@ function openSpace(item, isShared){
     spaceMesh = panoMesh(c); spaceScene.add(spaceMesh);
     $('panel').hidden = true; $('tip').hidden = true;
     flashTo(0, 900); $('arrival').hidden = true;
-    if (!reduce && state === 'gate'){ anim = { t: 0, dur: 1.1, mix: 0, base: state === 'gate' ? 'room' : 'gallery', overScene: spaceScene, overMesh: spaceMesh, done: finish }; state = 'reveal'; return; }
+    if (!reduce && (state === 'gate' || state === 'toSpace')){ anim = { t: 0, dur: state === 'gate' ? 1.1 : 1.6, mix: 0, base: state === 'gate' ? 'room' : 'gallery', overScene: spaceScene, overMesh: spaceMesh, done: finish }; state = 'reveal'; return; }
     finish();
   };
   var finish = function(){
@@ -706,7 +689,6 @@ function openSpace(item, isShared){
     state = 'space'; camera.position.set(0, 1.6, 0); yaw = tYaw = 0; pitch = tPitch = 0; setFov(72);
     $('panel').hidden = true; showOnly('spaceBar'); flashTo(0, 1000); setSpin(!reduce);
     tip('גררו כדי להסתכל סביב. גלגלת העכבר מקרבת ומרחיקה.');
-    if (irisPending){ irisPending = false; iris = { t: 0, dur: .7 }; setFov(86); }
   };
   if (item.canvas){ show(item.canvas); return; }
   ensureCanvas(item).then(function(c){ if (state === 'toSpace') show(c); })
@@ -1009,7 +991,6 @@ function tick(){
   requestAnimationFrame(tick);
   var dt = Math.min(clock.getDelta(), .05), t = clock.elapsedTime;
   if (anim) runAnim(dt);
-  if (iris) runIris(dt);
   if (autoSpin && !drag && state === 'space') tYaw += dt*.035;
   if (!anim){ var k = Math.min(1, dt*9); yaw += (tYaw - yaw)*k; pitch += (tPitch - pitch)*k; }
   if (state === 'gallery'){ camZ += (tCamZ - camZ)*Math.min(1, dt*1.8); camera.position.set(0, 1.6, camZ); }
