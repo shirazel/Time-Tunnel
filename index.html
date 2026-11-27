@@ -84,17 +84,6 @@ button:focus-visible,.drop:focus-visible,summary:focus-visible,input:focus-visib
 .noteClose{position:absolute;top:10px;left:12px;border:0;background:none;color:var(--gold-hi);font-family:var(--body);font-size:15px;padding:8px;cursor:pointer;min-height:44px}
 .noteClose:hover{text-decoration:underline}
 /* a small gold X in the top right corner of the prompt card */
-/* in a space: a gold arrow on the ground behind you, where you came in, leads back to the tunnel */
-.doorArrow{position:fixed;left:0;top:0;z-index:4;display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:none;padding:6px;cursor:pointer;
-  color:#fff;font-family:var(--body);font-size:13px;text-shadow:0 1px 6px rgba(6,8,23,.95);will-change:transform}
-.doorArrow[hidden]{display:none}
-.doorArrow svg{width:58px;height:58px;filter:drop-shadow(0 3px 8px rgba(0,0,0,.6));animation:arrowBob 1.8s ease-in-out infinite}
-.doorArrow circle{fill:rgba(12,14,38,.55);stroke:var(--gold);stroke-width:2.5}
-.doorArrow path{fill:none;stroke:var(--gold-hi);stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}
-.doorArrow:hover circle,.doorArrow:focus-visible circle{fill:rgba(232,185,74,.3)}
-.doorArrow:focus-visible{outline:2px solid var(--gold-hi);outline-offset:2px;border-radius:12px}
-@keyframes arrowBob{50%{transform:translateY(-5px)}}
-@media (prefers-reduced-motion:reduce){.doorArrow svg{animation:none}}
 .closeX{position:absolute;top:8px;right:8px;width:44px;height:44px;display:grid;place-items:center;border:0;background:none;cursor:pointer;padding:0;border-radius:50%}
 .closeX svg{width:18px;height:18px;stroke:var(--gold);stroke-width:2.4;stroke-linecap:round;fill:none;transition:stroke .2s,transform .2s}
 .closeX:hover svg,.closeX:focus-visible svg{stroke:var(--gold-hi);transform:scale(1.12)}
@@ -203,10 +192,6 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
   <button class="ghost warn" id="removeSpace" type="button" hidden>מחיקת האירוע שלי</button>
 </div>
 <div class="tip" id="tip" hidden></div>
-<button class="doorArrow" id="doorArrow" type="button" hidden aria-label="חזרה למנהרה">
-  <svg viewBox="0 0 60 60" aria-hidden="true"><circle cx="30" cy="30" r="27"/><path d="M18 36 L30 22 L42 36"/></svg>
-  <span>חזרה למנהרה</span>
-</button>
 <div class="tileLabel" id="tileLabel" hidden></div>
 
 <div class="flash" id="flash"></div>
@@ -717,17 +702,6 @@ function runAnim(dt){
 function closeOpenTile(){
   if (!openTile) return; var u = openTile.userData; u.pivot.rotation.y = 0; u.open = 0; u.glow.visible = false; u.rim.visible = true; if (u.halo){ u.halo.material.opacity = 0; u.halo.scale.set(TILE*1.8, TILE*1.8, 1); } if (u.hinge) u.hinge.rotation.x = 0; openTile = null;
 }
-var doorDir = new THREE.Vector3(), doorEl = null;
-function placeDoorArrow(){
-  if (!doorEl) doorEl = $('doorArrow');
-  if (state !== 'space'){ if (!doorEl.hidden) doorEl.hidden = true; return; }
-  // behind the starting view (the way you came in), on the ground a few steps away
-  doorDir.set(0, 1.6 - 1.1, 4).project(camera);
-  var vis = doorDir.z < 1 && Math.abs(doorDir.x) < 1.05 && Math.abs(doorDir.y) < 1.05;
-  doorEl.hidden = !vis; if (!vis) return;
-  var x = (doorDir.x + 1)/2*innerWidth, y = (1 - doorDir.y)/2*innerHeight;
-  doorEl.style.transform = 'translate(' + (x - doorEl.offsetWidth/2).toFixed(1) + 'px,' + (y - 30).toFixed(1) + 'px)';
-}
 function backToGallery(){
   $('arrival').hidden = true;
   $('altarBtn').hidden = true; $('toFrame').hidden = true; closeNote();
@@ -970,7 +944,6 @@ function bindUI(){
   $('toFrame').addEventListener('click', function(){ tYaw = Math.round(tYaw/TAU)*TAU; tPitch = 0; });
   $('spin').addEventListener('click', function(){ setSpin(!autoSpin); });
   $('removeSpace').addEventListener('click', removeCurrent);
-  $('doorArrow').addEventListener('click', backToGallery);
   var full = $('full'); if (!document.documentElement.requestFullscreen) full.hidden = true;
   full.addEventListener('click', function(){ try { if (document.fullscreenElement) document.exitFullscreen(); else { var p = document.documentElement.requestFullscreen(); if (p && p.catch) p.catch(function(){}); } } catch(e){} });
   document.addEventListener('fullscreenchange', function(){ full.textContent = document.fullscreenElement ? 'יציאה ממסך מלא' : 'מסך מלא'; });
@@ -1099,7 +1072,6 @@ function tick(){
   }
   else if (state === 'gate') renderRoom(t);
   else renderer.render(spaceScene, camera);
-  placeDoorArrow();
 }
 
 function start(){
