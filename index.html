@@ -130,7 +130,7 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
 .clock{position:relative;width:min(38vmin,240px);aspect-ratio:1}
 /* the round gold knocker beside the clock opens the prompt card */
 .clockRow{position:relative;align-self:stretch;display:flex;justify-content:center}
-.knock{position:absolute;right:max(0px,9vw);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;
+.knock{position:absolute;left:calc(50% + min(19vmin,120px) + clamp(16px,4vw,56px));top:calc(50% + 28px);transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;
   width:clamp(120px,20vmin,170px);padding:6px;background:none;border:0;cursor:pointer;color:#fff;font-family:var(--body);font-weight:400;font-size:13px;line-height:1.35;text-align:center}
 .knock img{width:86%;height:auto;transform-origin:50% 8%;filter:drop-shadow(0 4px 10px rgba(0,0,0,.6)) drop-shadow(0 0 12px rgba(255,200,110,.25));transition:transform .5s ease,filter .3s}
 .knock[hidden]{display:none}
@@ -140,7 +140,7 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
 .knock:hover span,.knock:focus-visible span{opacity:1}
 .knock:focus-visible{outline:2px solid var(--gold-hi);outline-offset:4px;border-radius:12px}
 @media (prefers-reduced-motion:reduce){.knock img{transition:none}.knock:hover img{transform:none}}
-@media (max-width:520px){.knock{font-size:11px;right:0;width:96px}}
+@media (max-width:520px){.knock{font-size:11px;left:auto;right:0;width:96px}}
 .clock::before{content:"";position:absolute;inset:-18%;border-radius:50%;background:radial-gradient(circle,rgba(255,214,130,.55) 30%,rgba(255,180,80,.18) 55%,rgba(0,0,0,0) 70%);animation:clockGlow 3.2s ease-in-out infinite}
 .clock img{position:relative;display:block;width:100%;height:100%;clip-path:circle(47.5% at 50% 50%)}
 .clock svg{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 2px 2px rgba(0,0,0,.55))}
@@ -261,7 +261,7 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
         <circle cx="100" cy="100" r="5" fill="url(#handGold)" stroke="#5a3a08" stroke-width=".6"/>
       </svg>
     </div>
-    <button class="knock" id="loaderPrompt" type="button" hidden>
+    <button class="knock" id="loaderPrompt" type="button">
       <img src="knocker.png" alt="" width="242" height="300">
       <span>קחו פרומפט וצרו תמונה של מרחב היסטורי</span>
     </button>
@@ -1087,7 +1087,7 @@ function start(){
     roomScene = new THREE.Scene(); roomScene.background = new THREE.Color('#060817'); roomMesh = panoMesh(toPanoCanvas(r[6], false)); roomScene.add(roomMesh);
     buildEntry(r[1]); buildGallery(); rebuildTiles();
     pitch = tPitch = .05; setFov(80); requestAnimationFrame(tick);
-    $('loaderText').textContent = 'מנהרת הזמן מוכנה'; var go = $('loaderGo'); go.hidden = false; $('loaderPrompt').hidden = false;
+    $('loaderText').textContent = 'מנהרת הזמן מוכנה'; var go = $('loaderGo'); go.hidden = false;
     go.addEventListener('click', function(){
       if (!$('promptCard').hidden) $('promptClose').click();
       startTicking(); go.disabled = true;
