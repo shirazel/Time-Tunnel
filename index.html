@@ -156,6 +156,7 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
 
 <div class="bottom" id="entryBar">
   <button class="gold pulse" id="enterDoor" type="button">להיכנס בדלת הזהב</button>
+  <button class="ghost" id="entryPrompt" type="button">קחו פרומפט וצרו תמונה של מרחב היסטורי</button>
 </div>
 <div class="bottom" id="galleryBar" hidden>
   <button class="ghost" id="exitTunnel" type="button">יציאה מהמנהרה</button>
@@ -487,6 +488,7 @@ function rebuildTiles(){
   var per = SPACE_NICHES.length, pages = Math.max(1, Math.ceil(all.length/per)); if (page >= pages) page = 0;
   $('pager').hidden = pages < 2; pageCount = pages;
   $('pageSign').textContent = 'אגף ' + (page + 1) + ' מתוך ' + pages;
+  $('prevPage').disabled = page <= 0; $('nextPage').disabled = page >= pages - 1;
   var list = [{ kind: 'plus', niche: PLUS_NICHE }].concat(all.slice(page*per, page*per + per).map(function(e, i){ e.niche = SPACE_NICHES[i]; return e; }));
   list.forEach(function(entry){
     var t = makeTile(entry.kind === 'plus' ? 'plus' : 'space', entry.item), n = nicheTransform(entry.niche);
@@ -552,6 +554,7 @@ function stopTicking(){ soundOn = false; }
 function enterTunnel(){
   if (state !== 'entry') return;
   startTicking();
+  $('promptCard').hidden = true; $('panel').hidden = true;
   state = 'toGallery'; showOnly(null); $('top').style.opacity = 0; $('gl').classList.remove('hover');
   anim = { t: 0, dur: reduce ? .01 : 3.4, mix: 0, efov: fov, yaw0: wrapAngle(yaw), pitch0: pitch, fov0: fov };
 }
@@ -906,7 +909,7 @@ function bindControls(){
 function bindUI(){
   $('enterDoor').addEventListener('click', enterTunnel);
   $('exitTunnel').addEventListener('click', exitToEntry);
-  var turnPage = function(d){ if (state !== 'gallery') return; page = (page + d + pageCount) % pageCount; rebuildTiles(); prefetchRooms();
+  var turnPage = function(d){ if (state !== 'gallery') return; var np = Math.max(0, Math.min(pageCount - 1, page + d)); if (np === page) return; page = np; rebuildTiles(); prefetchRooms();
     tiles.forEach(function(t){ t.userData.appear = 0; }); };
   $('nextPage').addEventListener('click', function(){ turnPage(1); });
   $('prevPage').addEventListener('click', function(){ turnPage(-1); });
@@ -951,7 +954,9 @@ function bindUI(){
     return parts[0] + place + parts[1] + (around || 'people, objects and buildings that fit the place and the period') + parts[2] + (mood || 'warm natural light') + (parts.slice(3).join(''));
   }
   $('openPromptForm').addEventListener('click', function(){ $('note').hidden = true; $('promptCard').hidden = false; $('pfStatus').textContent = ''; $('pfFallback').hidden = true; setTimeout(function(){ try { $('pfPlace').focus(); } catch(e){} }, 60); });
-  $('promptClose').addEventListener('click', function(){ $('promptCard').hidden = true; $('note').hidden = false; });
+  $('promptClose').addEventListener('click', function(){ $('promptCard').hidden = true; if (state === 'entry'){ $('panel').hidden = true; $('top').style.opacity = 1; } else $('note').hidden = false; });
+  // the same prompt card, opened from the golden door in the entrance hall
+  $('entryPrompt').addEventListener('click', function(){ if (state !== 'entry') return; $('panel').hidden = false; $('top').style.opacity = 0; $('openPromptForm').click(); });
   $('copyPrompt').addEventListener('click', function(){
     if (!$('pfPlace').value.trim()){ $('pfStatus').textContent = 'כתבו לאן ולאיזו תקופה.'; try { $('pfPlace').focus(); } catch(e){} return; }
     var text = buildPrompt(), st = $('pfStatus');
