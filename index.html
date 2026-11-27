@@ -83,6 +83,11 @@ button:focus-visible,.drop:focus-visible,summary:focus-visible,input:focus-visib
 @keyframes noteIn{from{opacity:0;transform:translate(-50%,-46%)}to{opacity:1;transform:translate(-50%,-50%)}}
 .noteClose{position:absolute;top:10px;left:12px;border:0;background:none;color:var(--gold-hi);font-family:var(--body);font-size:15px;padding:8px;cursor:pointer;min-height:44px}
 .noteClose:hover{text-decoration:underline}
+/* a small gold X in the top right corner of the prompt card */
+.closeX{position:absolute;top:8px;right:8px;width:44px;height:44px;display:grid;place-items:center;border:0;background:none;cursor:pointer;padding:0;border-radius:50%}
+.closeX svg{width:18px;height:18px;stroke:var(--gold);stroke-width:2.4;stroke-linecap:round;fill:none;transition:stroke .2s,transform .2s}
+.closeX:hover svg,.closeX:focus-visible svg{stroke:var(--gold-hi);transform:scale(1.12)}
+.closeX:focus-visible{outline:2px solid var(--gold-hi);outline-offset:-4px}
 .altar{position:fixed;transform:translate(-50%,-50%);z-index:4;font-size:20px;min-height:60px;animation:pulse 2.4s ease-in-out infinite}
 .altar:hover{transform:translate(-50%,-50%) translateY(-1px)}
 @media (prefers-reduced-motion:reduce){ .panel{animation:none} }
@@ -225,7 +230,7 @@ pre.prompt{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-w
     <button class="ghost" id="openPromptForm" type="button">עוד אין לכם תמונה? יוצרים פרומפט</button>
   </div>
   <div class="card promptCard" id="promptCard" role="dialog" aria-labelledby="pfTitle" hidden>
-  <button class="noteClose" id="promptClose" type="button">חזרה</button>
+  <button class="closeX" id="promptClose" type="button" aria-label="סגירה"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5 L15 15 M15 5 L5 15"/></svg></button>
   <h2 id="pfTitle">פרומפט לתמונת 360</h2>
   <p>מלאו, העתיקו והדביקו. מומלץ ליצור ב-ChatGPT.</p>
   <label for="pfPlace">לאן ולאיזו תקופה?
